@@ -24,7 +24,7 @@ function GuestMealRates() {
   const fetchRates = async () => {
     try {
       const res = await axios.get(
-        import.meta.env.VITE_API_URL || "http://localhost:5000"/api/guest-meal/rates",
+        (import.meta.env.VITE_API_URL || "http://localhost:5000") + "/api/guest-meal/rates",
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -42,7 +42,7 @@ function GuestMealRates() {
     e.preventDefault();
 
     try {
-      await axios.put(import.meta.env.VITE_API_URL || "http://localhost:5000"/api/guest-meal/rates", rates, {
+      await axios.put((import.meta.env.VITE_API_URL || "http://localhost:5000") + "/api/guest-meal/rates", rates, {
         headers: {
           Authorization: `Bearer ${token}`,
         },

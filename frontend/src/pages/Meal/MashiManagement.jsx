@@ -22,7 +22,7 @@ function MashiManagement() {
       const token = localStorage.getItem("token");
 
       const res = await axios.get(
-        import.meta.env.VITE_API_URL || "http://localhost:5000"/api/fixed-cost/mashi",
+        (import.meta.env.VITE_API_URL || "http://localhost:5000") + "/api/fixed-cost/mashi",
         {
           headers: {
             Authorization: `Bearer ${token}`,

@@ -21,7 +21,7 @@ function PaymentForm() {
 
   const fetchQR = async () => {
     try {
-      const res = await axios.get(import.meta.env.VITE_API_URL || "http://localhost:5000"/api/payment/get-qr");
+      const res = await axios.get((import.meta.env.VITE_API_URL || "http://localhost:5000") + "/api/payment/get-qr");
 
       if (res.data.success && res.data.qr && res.data.qr.qrImage) {
         setQrImage(res.data.qr.qrImage);
@@ -46,7 +46,7 @@ function PaymentForm() {
       formData.append("screenshot", screenshot);
 
       const res = await axios.post(
-        import.meta.env.VITE_API_URL || "http://localhost:5000"/api/payment/create",
+        (import.meta.env.VITE_API_URL || "http://localhost:5000") + "/api/payment/create",
         formData,
         {
           headers: {

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 
-const API = import.meta.env.VITE_API_URL || "http://localhost:5000"/api/monthly-reset";
+const API = (import.meta.env.VITE_API_URL || "http://localhost:5000") + "/api/monthly-reset";
 
 export default function MonthlyReset() {
   const token = localStorage.getItem("token");

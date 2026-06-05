@@ -3,7 +3,7 @@ import axios from "axios";
 import DashboardLayout from "../../components/layout/DashboardLayout";
 import { showSuccess, showError } from "../../utils/toast";
 
-const API = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_URL || "http://localhost:5000"";
+const API = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 function PdfReports() {
   const [folders, setFolders] = useState([]);
