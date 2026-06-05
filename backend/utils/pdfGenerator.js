@@ -68,9 +68,19 @@ const baseStyles = `
 // ======================================
 
 async function htmlToPdf(html, pdfOptions = {}) {
+  // On Render, Chrome is installed to a known cache path via
+  // `npx puppeteer browsers install chrome` in the build command.
+  // We find that path at runtime so Puppeteer can locate it.
+  const { executablePath } = require("puppeteer");
   const browser = await puppeteer.launch({
     headless: "new",
-    args: ["--no-sandbox", "--disable-setuid-sandbox"],
+    executablePath: executablePath(),
+    args: [
+      "--no-sandbox",
+      "--disable-setuid-sandbox",
+      "--disable-dev-shm-usage",
+      "--disable-gpu",
+    ],
   });
   const page = await browser.newPage();
   await page.setContent(html, { waitUntil: "networkidle0" });
