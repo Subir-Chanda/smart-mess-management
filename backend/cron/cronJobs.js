@@ -1,6 +1,5 @@
 const cron = require("node-cron");
-const path = require("path");
-const fs = require("fs");
+const mongoose = require("mongoose");
 
 // ======================================
 // MODELS
@@ -16,6 +15,8 @@ const GuestMeal = require("../models/GuestMeal");
 const FixedExpense = require("../models/FixedExpense");
 const PdfReport = require("../models/PdfReport");
 const User = require("../models/User");
+const MashiCost = require("../models/MashiCost");
+const GuestMealRate = require("../models/GuestMealRate");
 
 // ======================================
 // PDF GENERATORS
@@ -29,13 +30,40 @@ const {
 } = require("../utils/pdfGenerator");
 
 // ======================================
+// ImageKit
+// ======================================
+const imagekit = require("../config/imagekit");
+
+// ======================================
+// HELPER — Upload buffer to ImageKit
+// ======================================
+async function uploadToImageKit(pdfBuffer, fileName, messId, folderName) {
+  const base64File = pdfBuffer.toString("base64");
+  const uploadResponse = await imagekit.upload({
+    file: base64File,
+    fileName: fileName,
+    folder: `/pdfs/${messId}/${folderName}/`,
+    useUniqueFileName: true,
+  });
+  return { fileUrl: uploadResponse.url, fileId: uploadResponse.fileId };
+}
+
+// ======================================
+// HELPER — Delete file from ImageKit
+// ======================================
+async function deleteFromImageKit(fileId) {
+  try {
+    if (fileId) await imagekit.deleteFile(fileId);
+  } catch (err) {
+    console.log("ImageKit delete failed (ignored):", err.message);
+  }
+}
+
+// ======================================
 // HELPER — get previous month info
-// Called on the 1st of a new month to
-// know which month to auto-reset
 // ======================================
 function getPreviousMonthInfo() {
   const now = new Date();
-  // We are on the 1st of new month — previous month is month-1
   const prevDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
   const month = prevDate.toLocaleString("default", { month: "long" });
   const year = prevDate.getFullYear();
@@ -44,7 +72,6 @@ function getPreviousMonthInfo() {
 
 // ======================================
 // HELPER — get current month info
-// Called on June 30 to lock June
 // ======================================
 function getCurrentMonthInfo() {
   const now = new Date();
@@ -54,55 +81,304 @@ function getCurrentMonthInfo() {
 }
 
 // ======================================
-// AUTO PDF GENERATION
-// Generates all 5 PDFs for given month
-// Overwrites if already exists
+// HELPER — getRateForCategory
+// (same logic as pdfController)
 // ======================================
-async function generateAllPdfsForMonth(month, year) {
-  const folderName = `${month}-${year}`;
-  const folderPath = path.join(__dirname, "..", "uploads", "pdfs", folderName);
-
-  if (!fs.existsSync(folderPath)) {
-    fs.mkdirSync(folderPath, { recursive: true });
+function getRateForCategory(category, guestRate) {
+  if (!guestRate) return 0;
+  switch (category) {
+    case "Sobji":
+      return guestRate.sobji || 0;
+    case "Fish":
+      return guestRate.fish || 0;
+    case "Egg":
+      return guestRate.egg || 0;
+    case "Chicken":
+      return guestRate.chicken || 0;
+    case "Grand Meal":
+      return guestRate.grandMeal || 0;
+    default:
+      return 0;
   }
+}
 
+// ======================================
+// GENERATE ALL PDFs FOR ONE MESS
+// Mirrors pdfController logic exactly
+// ======================================
+async function generateAllPdfsForMess(messId, month, year) {
+  const messObjectId = new mongoose.Types.ObjectId(messId);
+  const folderName = `${month}-${year}`;
   const results = [];
 
-  // ── Helper: delete existing DB record + file ──
-  async function clearExisting(reportType, fileName) {
-    const existing = await PdfReport.findOne({ reportType, month, year });
+  // ── Helper: delete existing DB record + ImageKit file ──
+  async function clearExisting(reportType) {
+    const existing = await PdfReport.findOne({
+      reportType,
+      month,
+      year,
+      messId,
+    });
     if (existing) {
-      const oldPath = path.join(__dirname, "..", existing.pdfPath);
-      if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
+      await deleteFromImageKit(existing.fileId);
       await PdfReport.findByIdAndDelete(existing._id);
     }
-    return path.join(folderPath, fileName);
   }
 
   // ── 1. MONTHLY CALCULATION PDF ──
   try {
-    // Build monthly calculation data directly (no HTTP call)
-    const axios = require("axios");
-    const monthlyRes = await axios.get(
-      import.meta.env.VITE_API_URL || "http://localhost:5000"/api/monthly-calculation/current",
-      { headers: { Authorization: "Bearer cron-internal" } },
-    );
-    const data = monthlyRes.data;
+    const users = await User.find({ approvalStatus: "approved", messId });
 
-    const filePath = await clearExisting(
-      "monthly-calculation",
+    const bazaarData = await DailyBazaar.aggregate([
+      { $match: { month, year, messId: messObjectId } },
+      { $group: { _id: null, total: { $sum: "$totalCost" } } },
+    ]);
+    const totalBazaarCost = bazaarData[0]?.total || 0;
+
+    const riceData = await RiceExpense.aggregate([
+      { $match: { month, year, messId: messObjectId } },
+      { $group: { _id: null, total: { $sum: "$cost" } } },
+    ]);
+    const totalRiceCost = riceData[0]?.total || 0;
+
+    const gasData = await GasExpense.aggregate([
+      { $match: { month, year, messId: messObjectId } },
+      { $group: { _id: null, total: { $sum: "$cost" } } },
+    ]);
+    const totalGasCost = gasData[0]?.total || 0;
+
+    const guestData = await GuestMeal.aggregate([
+      { $match: { month, year, messId: messObjectId } },
+      { $group: { _id: null, total: { $sum: "$totalCost" } } },
+    ]);
+    const totalGuestCost = guestData[0]?.total || 0;
+
+    const fixedData = await FixedExpense.aggregate([
+      { $match: { month, year, messId: messObjectId } },
+      { $group: { _id: null, total: { $sum: "$amount" } } },
+    ]);
+    const totalFixedCost = fixedData[0]?.total || 0;
+
+    const latestMashi = await MashiCost.findOne({ messId }).sort({
+      createdAt: -1,
+    });
+    const rannaRate = latestMashi?.rannaMashiCost || 0;
+    const kajerRate = latestMashi?.kajerMashiCost || 0;
+
+    const guestRate = await GuestMealRate.findOne({ messId }).sort({
+      createdAt: -1,
+    });
+
+    let eligibleMeals = 0;
+    let totalLowMealRecovery = 0;
+    const memberRows = [];
+
+    for (const user of users) {
+      const mealData = await MealEntry.aggregate([
+        { $match: { user: user._id, month, year, messId: messObjectId } },
+        { $group: { _id: null, meals: { $sum: "$totalMeal" } } },
+      ]);
+      const mealCount = mealData[0]?.meals || 0;
+
+      if (mealCount > 0 && mealCount <= 10) {
+        const mealEntries = await MealEntry.find({
+          user: user._id,
+          month,
+          year,
+          messId,
+        });
+        let memberGuestCost = 0;
+        for (const meal of mealEntries) {
+          for (const mealType of ["Lunch", "Dinner"]) {
+            if (
+              (mealType === "Lunch" && meal.lunch) ||
+              (mealType === "Dinner" && meal.dinner)
+            ) {
+              const bazaarEntry = await DailyBazaar.findOne({
+                date: meal.date,
+                month,
+                year,
+                mealType,
+                messId,
+              });
+              if (bazaarEntry)
+                memberGuestCost += getRateForCategory(
+                  bazaarEntry.foodCategory,
+                  guestRate,
+                );
+            }
+          }
+        }
+        totalLowMealRecovery += memberGuestCost;
+      }
+
+      if (mealCount >= 30) eligibleMeals += mealCount;
+      else if (mealCount >= 11) eligibleMeals += 30;
+
+      memberRows.push({ user, mealCount });
+    }
+
+    const finalBazaarCost =
+      totalBazaarCost +
+      totalRiceCost +
+      totalGasCost -
+      totalGuestCost -
+      totalLowMealRecovery;
+    const mealRate =
+      eligibleMeals > 0 ? (finalBazaarCost / eligibleMeals).toFixed(2) : 0;
+    const fixedCostPerMember =
+      users.length > 0 ? (totalFixedCost / users.length).toFixed(2) : 0;
+
+    const finalRows = [];
+    let totalDueAmount = 0;
+    let totalMashiCost = 0;
+
+    for (const row of memberRows) {
+      const user = row.user;
+      const mealCount = row.mealCount;
+
+      const depositData = await Deposit.aggregate([
+        { $match: { user: user._id, month, year, messId: messObjectId } },
+        { $group: { _id: null, total: { $sum: "$amount" } } },
+      ]);
+      const deposit = depositData[0]?.total || 0;
+
+      const memberGuestData = await GuestMeal.aggregate([
+        { $match: { member: user._id, month, year, messId: messObjectId } },
+        { $group: { _id: null, total: { $sum: "$totalCost" } } },
+      ]);
+      const guestCost = memberGuestData[0]?.total || 0;
+
+      let mealCost = 0;
+      if (mealCount >= 30) {
+        mealCost = mealCount * Number(mealRate);
+      } else if (mealCount >= 11) {
+        mealCost = 30 * Number(mealRate);
+      } else if (mealCount > 0 && mealCount <= 10) {
+        const mealEntries = await MealEntry.find({
+          user: user._id,
+          month,
+          year,
+          messId,
+        });
+        let lowMealCost = 0;
+        for (const meal of mealEntries) {
+          for (const mealType of ["Lunch", "Dinner"]) {
+            if (
+              (mealType === "Lunch" && meal.lunch) ||
+              (mealType === "Dinner" && meal.dinner)
+            ) {
+              const bazaarEntry = await DailyBazaar.findOne({
+                date: meal.date,
+                month,
+                year,
+                mealType,
+                messId,
+              });
+              if (bazaarEntry)
+                lowMealCost += getRateForCategory(
+                  bazaarEntry.foodCategory,
+                  guestRate,
+                );
+            }
+          }
+        }
+        mealCost = lowMealCost;
+      }
+
+      let rannaCost = 0;
+      const kajerCostVal = Number(kajerRate);
+      if (user.monthlyMealStatus === "ON") rannaCost = Number(rannaRate);
+
+      totalMashiCost += rannaCost + kajerCostVal;
+
+      const totalCost =
+        mealCost +
+        guestCost +
+        rannaCost +
+        kajerCostVal +
+        Number(fixedCostPerMember);
+      const due = totalCost - deposit;
+      totalDueAmount += due;
+
+      let billableMeals = mealCount;
+      if (mealCount >= 11 && mealCount <= 29) billableMeals = 30;
+
+      finalRows.push({
+        name: user.name,
+        monthlyMealStatus: user.monthlyMealStatus,
+        billingType:
+          mealCount <= 10
+            ? "Guest"
+            : mealCount <= 29
+              ? "30 Meal Rule"
+              : "Normal",
+        deposit,
+        mealCount,
+        billableMeals,
+        mealCost: mealCost.toFixed(2),
+        guestCost,
+        rannaCost,
+        kajerCost: kajerCostVal,
+        fixedCost: fixedCostPerMember,
+        totalCost: totalCost.toFixed(2),
+        due: due.toFixed(2),
+      });
+    }
+
+    const allDepositData = await Deposit.aggregate([
+      { $match: { messId: messObjectId } },
+      { $group: { _id: null, total: { $sum: "$amount" } } },
+    ]);
+    const totalDeposits = allDepositData[0]?.total || 0;
+    const currentMessFundBalance =
+      totalDeposits - (totalBazaarCost + totalFixedCost);
+    const totalGuestRecovery = totalGuestCost + totalLowMealRecovery;
+    const dueToPaid = totalMashiCost + totalRiceCost + totalGasCost;
+
+    const data = {
+      month,
+      year,
+      mealRate,
+      eligibleMeals,
+      totalBazaarCost,
+      totalRiceCost,
+      totalGasCost,
+      totalGuestCost,
+      totalGuestRecovery,
+      totalFixedCost,
+      rannaRate,
+      kajerRate,
+      rows: Array.isArray(finalRows) ? finalRows : [],
+      fixedCostPerMember,
+      currentMessFundBalance,
+      totalDueAmount,
+      totalMashiCost,
+      dueToPaid,
+      difference:
+        totalDueAmount +
+        currentMessFundBalance -
+        (totalMashiCost + totalRiceCost + totalGasCost),
+    };
+
+    await clearExisting("monthly-calculation");
+    const pdfBuffer = await generateMonthlyPdf({ data });
+    const { fileUrl, fileId } = await uploadToImageKit(
+      pdfBuffer,
       "monthly-calculation.pdf",
+      messId,
+      folderName,
     );
-    await generateMonthlyPdf({ filePath, data });
-
     await PdfReport.create({
       title: "Monthly Calculation",
       reportType: "monthly-calculation",
       month,
       year,
       folderName,
-      pdfPath: `uploads/pdfs/${folderName}/monthly-calculation.pdf`,
+      fileUrl,
+      fileId,
       createdBy: null,
+      messId,
     });
     results.push({ pdf: "monthly-calculation", status: "ok" });
   } catch (err) {
@@ -115,7 +391,7 @@ async function generateAllPdfsForMonth(month, year) {
 
   // ── 2. DEPOSIT PDF ──
   try {
-    const deposits = await Deposit.find({ month, year })
+    const deposits = await Deposit.find({ month, year, messId })
       .populate("user", "name")
       .sort({ createdAt: 1 });
 
@@ -132,19 +408,27 @@ async function generateAllPdfsForMonth(month, year) {
           year: d.year,
         });
       });
-      const members = Object.values(memberMap);
 
-      const filePath = await clearExisting("deposit", "deposit-ledger.pdf");
-      await generateDepositPdf({ filePath, data: { month, year, members } });
-
+      await clearExisting("deposit");
+      const pdfBuffer = await generateDepositPdf({
+        data: { month, year, members: Object.values(memberMap) },
+      });
+      const { fileUrl, fileId } = await uploadToImageKit(
+        pdfBuffer,
+        "deposit-ledger.pdf",
+        messId,
+        folderName,
+      );
       await PdfReport.create({
         title: "Deposits",
         reportType: "deposit",
         month,
         year,
         folderName,
-        pdfPath: `uploads/pdfs/${folderName}/deposit-ledger.pdf`,
+        fileUrl,
+        fileId,
         createdBy: null,
+        messId,
       });
       results.push({ pdf: "deposit-ledger", status: "ok" });
     } else {
@@ -160,8 +444,8 @@ async function generateAllPdfsForMonth(month, year) {
 
   // ── 3. MEAL KHATA PDF ──
   try {
-    const users = await User.find({ approvalStatus: "approved" });
-    const allEntries = await MealEntry.find({ month, year });
+    const users = await User.find({ approvalStatus: "approved", messId });
+    const allEntries = await MealEntry.find({ month, year, messId });
 
     const members = users.map((user) => {
       const userEntries = allEntries.filter(
@@ -173,25 +457,36 @@ async function generateAllPdfsForMonth(month, year) {
       });
       const totalLunch = userEntries.filter((e) => e.lunch).length;
       const totalDinner = userEntries.filter((e) => e.dinner).length;
-      const totalMeals = totalLunch + totalDinner;
-      return { name: user.name, entries, totalLunch, totalDinner, totalMeals };
+      return {
+        name: user.name,
+        entries,
+        totalLunch,
+        totalDinner,
+        totalMeals: totalLunch + totalDinner,
+      };
     });
     const grandTotal = members.reduce((sum, m) => sum + m.totalMeals, 0);
 
-    const filePath = await clearExisting("meal-khata", "daily-meal-khata.pdf");
-    await generateMealKhataPdf({
-      filePath,
+    await clearExisting("meal-khata");
+    const pdfBuffer = await generateMealKhataPdf({
       data: { month, year, members, grandTotal },
     });
-
+    const { fileUrl, fileId } = await uploadToImageKit(
+      pdfBuffer,
+      "daily-meal-khata.pdf",
+      messId,
+      folderName,
+    );
     await PdfReport.create({
       title: "Daily Meal Khata",
       reportType: "meal-khata",
       month,
       year,
       folderName,
-      pdfPath: `uploads/pdfs/${folderName}/daily-meal-khata.pdf`,
+      fileUrl,
+      fileId,
       createdBy: null,
+      messId,
     });
     results.push({ pdf: "meal-khata", status: "ok" });
   } catch (err) {
@@ -200,8 +495,8 @@ async function generateAllPdfsForMonth(month, year) {
 
   // ── 4. MEAL GRID PDF ──
   try {
-    const users = await User.find({ approvalStatus: "approved" });
-    const allEntries = await MealEntry.find({ month, year });
+    const users = await User.find({ approvalStatus: "approved", messId });
+    const allEntries = await MealEntry.find({ month, year, messId });
 
     const members = users.map((user) => {
       const userEntries = allEntries.filter(
@@ -215,17 +510,26 @@ async function generateAllPdfsForMonth(month, year) {
       return { name: user.name, entries, totalMeals };
     });
 
-    const filePath = await clearExisting("meal-grid", "meal-grid.pdf");
-    await generateMealGridPdf({ filePath, data: { month, year, members } });
-
+    await clearExisting("meal-grid");
+    const pdfBuffer = await generateMealGridPdf({
+      data: { month, year, members },
+    });
+    const { fileUrl, fileId } = await uploadToImageKit(
+      pdfBuffer,
+      "meal-grid.pdf",
+      messId,
+      folderName,
+    );
     await PdfReport.create({
       title: "Meal Grid",
       reportType: "meal-grid",
       month,
       year,
       folderName,
-      pdfPath: `uploads/pdfs/${folderName}/meal-grid.pdf`,
+      fileUrl,
+      fileId,
       createdBy: null,
+      messId,
     });
     results.push({ pdf: "meal-grid", status: "ok" });
   } catch (err) {
@@ -234,7 +538,7 @@ async function generateAllPdfsForMonth(month, year) {
 
   // ── 5. BAZAAR LEDGER PDF ──
   try {
-    const bazaarList = await DailyBazaar.find({ month, year })
+    const bazaarList = await DailyBazaar.find({ month, year, messId })
       .populate("bazaarBy", "name")
       .sort({ date: 1 });
 
@@ -243,27 +547,33 @@ async function generateAllPdfsForMonth(month, year) {
         date: b.date,
         mealType: b.mealType,
         bazaarBy: b.bazaarBy?.name || "Unknown",
-        items: b.items,
+        items: b.items.map((item) => ({
+          itemName: item.itemName,
+          price: item.price,
+        })),
         totalCost: b.totalCost,
       }));
 
-      const filePath = await clearExisting(
-        "bazaar-ledger",
-        "bazaar-ledger.pdf",
-      );
-      await generateBazaarLedgerPdf({
-        filePath,
+      await clearExisting("bazaar-ledger");
+      const pdfBuffer = await generateBazaarLedgerPdf({
         data: { month, year, entries },
       });
-
+      const { fileUrl, fileId } = await uploadToImageKit(
+        pdfBuffer,
+        "bazaar-ledger.pdf",
+        messId,
+        folderName,
+      );
       await PdfReport.create({
         title: "Bazaar Ledger",
         reportType: "bazaar-ledger",
         month,
         year,
         folderName,
-        pdfPath: `uploads/pdfs/${folderName}/bazaar-ledger.pdf`,
+        fileUrl,
+        fileId,
         createdBy: null,
+        messId,
       });
       results.push({ pdf: "bazaar-ledger", status: "ok" });
     } else {
@@ -282,35 +592,59 @@ async function generateAllPdfsForMonth(month, year) {
 
 // ======================================
 // AUTO RESET FUNCTION
-// Deletes all mess data for given month
 // ======================================
-async function performAutoReset(month, year) {
+async function performAutoReset(messId, month, year) {
   const numYear = Number(year);
 
   const counts = {
-    mealEntries: await MealEntry.countDocuments({ month, year: numYear }),
-    deposits: await Deposit.countDocuments({ month, year: numYear }),
-    bazaarEntries: await DailyBazaar.countDocuments({ month, year: numYear }),
-    riceExpenses: await RiceExpense.countDocuments({ month, year: numYear }),
-    gasExpenses: await GasExpense.countDocuments({ month, year: numYear }),
-    guestMeals: await GuestMeal.countDocuments({ month, year: numYear }),
-    fixedExpenses: await FixedExpense.countDocuments({ month, year: numYear }),
+    mealEntries: await MealEntry.countDocuments({
+      month,
+      year: numYear,
+      messId,
+    }),
+    deposits: await Deposit.countDocuments({ month, year: numYear, messId }),
+    bazaarEntries: await DailyBazaar.countDocuments({
+      month,
+      year: numYear,
+      messId,
+    }),
+    riceExpenses: await RiceExpense.countDocuments({
+      month,
+      year: numYear,
+      messId,
+    }),
+    gasExpenses: await GasExpense.countDocuments({
+      month,
+      year: numYear,
+      messId,
+    }),
+    guestMeals: await GuestMeal.countDocuments({
+      month,
+      year: numYear,
+      messId,
+    }),
+    fixedExpenses: await FixedExpense.countDocuments({
+      month,
+      year: numYear,
+      messId,
+    }),
   };
 
   await Promise.all([
-    MealEntry.deleteMany({ month, year: numYear }),
-    Deposit.deleteMany({ month, year: numYear }),
-    DailyBazaar.deleteMany({ month, year: numYear }),
-    RiceExpense.deleteMany({ month, year: numYear }),
-    GasExpense.deleteMany({ month, year: numYear }),
-    GuestMeal.deleteMany({ month, year: numYear }),
-    FixedExpense.deleteMany({ month, year: numYear }),
+    MealEntry.deleteMany({ month, year: numYear, messId }),
+    Deposit.deleteMany({ month, year: numYear, messId }),
+    DailyBazaar.deleteMany({ month, year: numYear, messId }),
+    RiceExpense.deleteMany({ month, year: numYear, messId }),
+    GasExpense.deleteMany({ month, year: numYear, messId }),
+    GuestMeal.deleteMany({ month, year: numYear, messId }),
+    FixedExpense.deleteMany({ month, year: numYear, messId }),
   ]);
 
   await MonthlyResetLog.create({
     month,
     year: numYear,
-    resetBy: null, // system-triggered
+    messId,
+    resetBy: null,
     deletedCounts: counts,
   });
 
@@ -318,32 +652,30 @@ async function performAutoReset(month, year) {
 }
 
 // ======================================
-// CRON JOB 1 — LOCK
-// Fires at 6:00 PM on the last day of
-// every month (day 28, 29, 30, 31)
-// We check if tomorrow is the 1st
+// CRON JOB 1 — LOCK (6PM last day)
 // ======================================
 function startLockCron() {
-  // Runs at 18:00 every day — checks if today is last day of month
   cron.schedule("0 18 * * *", async () => {
     try {
       const now = new Date();
       const tomorrow = new Date(now);
       tomorrow.setDate(now.getDate() + 1);
-
-      // If tomorrow is the 1st — today is the last day of the month
       if (tomorrow.getDate() !== 1) return;
 
       const { month, year } = getCurrentMonthInfo();
 
-      // Upsert lock document
-      await MonthLock.findOneAndUpdate(
-        { month, year },
-        { isLocked: true, lockedAt: new Date() },
-        { upsert: true, new: true },
-      );
-
-      console.log(`[CRON LOCK] Month locked: ${month} ${year} at 6:00 PM`);
+      // Lock all messes
+      const allMessIds = await User.distinct("messId", {
+        approvalStatus: "approved",
+      });
+      for (const messId of allMessIds) {
+        await MonthLock.findOneAndUpdate(
+          { month, year, messId },
+          { isLocked: true, lockedAt: new Date() },
+          { upsert: true, new: true },
+        );
+      }
+      console.log(`[CRON LOCK] All messes locked for ${month} ${year}`);
     } catch (err) {
       console.error("[CRON LOCK ERROR]", err);
     }
@@ -351,57 +683,70 @@ function startLockCron() {
 }
 
 // ======================================
-// CRON JOB 2 — AUTO PDF + RESET
-// Fires at 11:00 PM on the 1st of every
-// month — generates PDFs for prev month,
-// then resets prev month data,
-// then unlocks
+// CRON JOB 2 — AUTO PDF + RESET (11PM 1st)
 // ======================================
 function startAutoResetCron() {
-  // Runs at 23:00 on day 1 of every month
   cron.schedule("0 23 1 * *", async () => {
     try {
       const { month, year } = getPreviousMonthInfo();
+      console.log(`[CRON AUTO-RESET] Starting for ${month} ${year}`);
 
-      console.log(
-        `[CRON AUTO-RESET] Starting auto process for ${month} ${year}`,
-      );
+      // Get all unique messIds that have data for this month
+      const allMessIds = await User.distinct("messId", {
+        approvalStatus: "approved",
+      });
 
-      // ── STEP 1: Check if admin already manually reset ──
-      const existingLog = await MonthlyResetLog.findOne({ month, year });
-      const lockDoc = await MonthLock.findOne({ month, year });
+      for (const messId of allMessIds) {
+        try {
+          const existingLog = await MonthlyResetLog.findOne({
+            month,
+            year,
+            messId,
+          });
+          const lockDoc = await MonthLock.findOne({ month, year, messId });
 
-      if (existingLog && lockDoc && !lockDoc.isLocked) {
-        // Admin already handled it — nothing to do
-        console.log(
-          `[CRON AUTO-RESET] Admin already reset ${month} ${year}. Skipping.`,
-        );
-        return;
+          if (existingLog && lockDoc && !lockDoc.isLocked) {
+            console.log(
+              `[CRON AUTO-RESET] Admin already reset messId ${messId} for ${month} ${year}. Skipping.`,
+            );
+            continue;
+          }
+
+          console.log(
+            `[CRON AUTO-RESET] Generating PDFs for messId ${messId}...`,
+          );
+          const pdfResults = await generateAllPdfsForMess(messId, month, year);
+          console.log(
+            `[CRON AUTO-RESET] PDFs for messId ${messId}:`,
+            pdfResults,
+          );
+
+          console.log(
+            `[CRON AUTO-RESET] Resetting data for messId ${messId}...`,
+          );
+          const counts = await performAutoReset(messId, month, year);
+          console.log(
+            `[CRON AUTO-RESET] Reset counts for messId ${messId}:`,
+            counts,
+          );
+
+          await MonthLock.findOneAndUpdate(
+            { month, year, messId },
+            {
+              isLocked: false,
+              autoResetScheduled: true,
+              autoResetDoneAt: new Date(),
+            },
+            { upsert: true, new: true },
+          );
+          console.log(`[CRON AUTO-RESET] Done for messId ${messId}`);
+        } catch (messErr) {
+          console.error(`[CRON AUTO-RESET ERROR] messId ${messId}:`, messErr);
+        }
       }
 
-      // ── STEP 2: Generate all 5 PDFs ──
-      console.log(`[CRON AUTO-RESET] Generating PDFs for ${month} ${year}...`);
-      const pdfResults = await generateAllPdfsForMonth(month, year);
-      console.log("[CRON AUTO-RESET] PDF results:", pdfResults);
-
-      // ── STEP 3: Auto reset ──
-      console.log(`[CRON AUTO-RESET] Deleting ${month} ${year} data...`);
-      const counts = await performAutoReset(month, year);
-      console.log("[CRON AUTO-RESET] Deleted counts:", counts);
-
-      // ── STEP 4: Unlock ──
-      await MonthLock.findOneAndUpdate(
-        { month, year },
-        {
-          isLocked: false,
-          autoResetScheduled: true,
-          autoResetDoneAt: new Date(),
-        },
-        { upsert: true, new: true },
-      );
-
       console.log(
-        `[CRON AUTO-RESET] Complete. ${month} ${year} unlocked and reset.`,
+        `[CRON AUTO-RESET] Complete for all messes. ${month} ${year}`,
       );
     } catch (err) {
       console.error("[CRON AUTO-RESET ERROR]", err);
@@ -410,7 +755,7 @@ function startAutoResetCron() {
 }
 
 // ======================================
-// EXPORT — call this once from index.js
+// EXPORT
 // ======================================
 function startAllCronJobs() {
   startLockCron();
