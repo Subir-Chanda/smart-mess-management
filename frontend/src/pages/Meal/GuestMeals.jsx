@@ -29,7 +29,7 @@ function GuestMeals() {
 
   const fetchMembers = async () => {
     const res = await axios.get(
-      "http://localhost:5000/api/member/all-members",
+      "${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/member/all-members",
       {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -41,7 +41,7 @@ function GuestMeals() {
   };
 
   const fetchGuestMeals = async () => {
-    const res = await axios.get("http://localhost:5000/api/guest-meal/all", {
+    const res = await axios.get("${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/guest-meal/all", {
       headers: {
         Authorization: `Bearer ${token}`,
       },
@@ -51,7 +51,7 @@ function GuestMeals() {
   };
 
   const fetchRates = async () => {
-    const res = await axios.get("http://localhost:5000/api/guest-meal/rates", {
+    const res = await axios.get("${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/guest-meal/rates", {
       headers: {
         Authorization: `Bearer ${token}`,
       },
@@ -63,7 +63,7 @@ function GuestMeals() {
   const submitHandler = async (e) => {
     e.preventDefault();
 
-    await axios.post("http://localhost:5000/api/guest-meal/add", form, {
+    await axios.post("${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/guest-meal/add", form, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
@@ -75,7 +75,7 @@ function GuestMeals() {
   };
 
   const deleteMeal = async (id) => {
-    await axios.delete(`http://localhost:5000/api/guest-meal/delete/${id}`, {
+    await axios.delete(`${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/guest-meal/delete/${id}`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },

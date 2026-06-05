@@ -30,7 +30,7 @@ function PendingRequests() {
       const token = localStorage.getItem("token");
 
       const res = await axios.get(
-        "http://localhost:5000/api/member/pending-users",
+        "${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/member/pending-users",
 
         {
           headers: {
@@ -56,7 +56,7 @@ function PendingRequests() {
       const token = localStorage.getItem("token");
 
       const res = await axios.put(
-        `http://localhost:5000/api/member/approve-user/${id}`,
+        `${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/member/approve-user/${id}`,
 
         {},
 
@@ -88,7 +88,7 @@ function PendingRequests() {
       const token = localStorage.getItem("token");
 
       const res = await axios.delete(
-        `http://localhost:5000/api/member/reject-user/${id}`,
+        `${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/member/reject-user/${id}`,
 
         {
           headers: {

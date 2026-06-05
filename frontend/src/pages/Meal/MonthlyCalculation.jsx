@@ -22,7 +22,7 @@ function MonthlyCalculation() {
     try {
       const token = localStorage.getItem("token");
       const res = await axios.get(
-        "http://localhost:5000/api/monthly-calculation/current",
+        "${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/monthly-calculation/current",
         { headers: { Authorization: `Bearer ${token}` } },
       );
       if (res.data.success) setData(res.data);
@@ -82,23 +82,23 @@ function MonthlyCalculation() {
 
     const tasks = [
       {
-        url: "http://localhost:5000/api/pdf/generate/monthly",
+        url: "${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/pdf/generate/monthly",
         label: "Monthly Calculation",
       },
       {
-        url: "http://localhost:5000/api/pdf/generate/deposit",
+        url: "${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/pdf/generate/deposit",
         label: "Deposit Ledger",
       },
       {
-        url: "http://localhost:5000/api/pdf/generate/meal-khata",
+        url: "${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/pdf/generate/meal-khata",
         label: "Daily Meal Khata",
       },
       {
-        url: "http://localhost:5000/api/pdf/generate/meal-grid",
+        url: "${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/pdf/generate/meal-grid",
         label: "Meal Grid",
       },
       {
-        url: "http://localhost:5000/api/pdf/generate/bazaar-ledger",
+        url: "${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/pdf/generate/bazaar-ledger",
         label: "Bazaar Ledger",
       },
     ];

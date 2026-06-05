@@ -14,7 +14,7 @@ function PaymentTable() {
   const fetchPayments = async () => {
     try {
       const res = await axios.get(
-        "http://localhost:5000/api/payment/all",
+        "${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/payment/all",
 
         {
           headers: {
@@ -40,7 +40,7 @@ function PaymentTable() {
   const approveHandler = async (id) => {
     try {
       await axios.put(
-        `http://localhost:5000/api/payment/approve/${id}`,
+        `${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/payment/approve/${id}`,
 
         {},
 
@@ -64,7 +64,7 @@ function PaymentTable() {
   const rejectHandler = async (id) => {
     try {
       await axios.put(
-        `http://localhost:5000/api/payment/reject/${id}`,
+        `${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/payment/reject/${id}`,
 
         {},
 

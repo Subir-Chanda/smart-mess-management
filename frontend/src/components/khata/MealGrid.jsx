@@ -22,7 +22,7 @@ function MealGrid({ members, currentMonth, currentYear }) {
       const token = localStorage.getItem("token");
 
       const res = await axios.get(
-        `http://localhost:5000/api/meal/get-meals?month=${currentMonth}&year=${currentYear}`,
+        `${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/meal/get-meals?month=${currentMonth}&year=${currentYear}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -57,7 +57,7 @@ function MealGrid({ members, currentMonth, currentYear }) {
       const token = localStorage.getItem("token");
 
       await axios.post(
-        "http://localhost:5000/api/meal/save-meal",
+        "${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/meal/save-meal",
         {
           userId: memberId,
           date: day,

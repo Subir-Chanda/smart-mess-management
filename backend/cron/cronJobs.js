@@ -84,7 +84,7 @@ async function generateAllPdfsForMonth(month, year) {
     // Build monthly calculation data directly (no HTTP call)
     const axios = require("axios");
     const monthlyRes = await axios.get(
-      "http://localhost:5000/api/monthly-calculation/current",
+      "${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/monthly-calculation/current",
       { headers: { Authorization: "Bearer cron-internal" } },
     );
     const data = monthlyRes.data;

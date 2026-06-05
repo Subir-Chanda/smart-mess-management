@@ -29,7 +29,7 @@ function BazaarSummary() {
       const year = currentDate.getFullYear();
 
       const res = await axios.get(
-        `http://localhost:5000/api/meal/bazaar-summary?month=${month}&year=${year}`,
+        `${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/meal/bazaar-summary?month=${month}&year=${year}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,

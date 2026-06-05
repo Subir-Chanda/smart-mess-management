@@ -11,7 +11,7 @@ function AdminMealRequests() {
   const fetchRequests = async () => {
     try {
       const res = await axios.get(
-        "http://localhost:5000/api/meal-request/all",
+        "${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/meal-request/all",
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -32,7 +32,7 @@ function AdminMealRequests() {
   const approveRequest = async (id) => {
     try {
       await axios.put(
-        `http://localhost:5000/api/meal-request/approve/${id}`,
+        `${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/meal-request/approve/${id}`,
         {},
         {
           headers: {
@@ -51,7 +51,7 @@ function AdminMealRequests() {
   const rejectRequest = async (id) => {
     try {
       await axios.put(
-        `http://localhost:5000/api/meal-request/reject/${id}`,
+        `${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/meal-request/reject/${id}`,
         {},
         {
           headers: {

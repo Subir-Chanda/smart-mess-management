@@ -10,7 +10,7 @@ function PaymentTable() {
   const fetchPayments = async () => {
     try {
       const res = await axios.get(
-        "http://localhost:5000/api/payment/pending",
+        "${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/payment/pending",
 
         {
           headers: {
@@ -31,7 +31,7 @@ function PaymentTable() {
 
   const approveHandler = async (id) => {
     await axios.put(
-      `http://localhost:5000/api/payment/approve/${id}`,
+      `${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/payment/approve/${id}`,
 
       {},
 
@@ -47,7 +47,7 @@ function PaymentTable() {
 
   const rejectHandler = async (id) => {
     await axios.put(
-      `http://localhost:5000/api/payment/reject/${id}`,
+      `${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/payment/reject/${id}`,
 
       {},
 
@@ -85,7 +85,7 @@ function PaymentTable() {
 
               <td>
                 <a
-                  href={`http://localhost:5000/uploads/${item.screenshot}`}
+                  href={`${import.meta.env.VITE_API_URL || "http://localhost:5000"}/uploads/${item.screenshot}`}
                   target="_blank"
                   rel="noreferrer"
                 >
