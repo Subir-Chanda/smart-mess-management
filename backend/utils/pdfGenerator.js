@@ -1,9 +1,9 @@
 // ======================================
-// PDF GENERATOR — uses Puppeteer (HTML → PDF)
-// Run: npm install puppeteer
+// PDF GENERATOR — uses html-pdf-node (HTML → PDF)
+// Run: npm install html-pdf-node
 // ======================================
 
-const puppeteer = require("puppeteer");
+const htmlPdf = require("html-pdf-node");
 
 // ======================================
 // SHARED BASE STYLES
@@ -68,32 +68,19 @@ const baseStyles = `
 // ======================================
 
 async function htmlToPdf(html, pdfOptions = {}) {
-  // On Render, Chrome is installed during build via:
-  // `npx puppeteer browsers install chrome`
-  // The path below is where Render caches it.
-  // PUPPETEER_EXECUTABLE_PATH env var can override this if needed.
-  const chromePath =
-    process.env.PUPPETEER_EXECUTABLE_PATH ||
-    "/opt/render/.cache/puppeteer/chrome/linux-149.0.7827.22/chrome-linux64/chrome";
-  const browser = await puppeteer.launch({
-    headless: "new",
-    executablePath: chromePath,
+  const options = {
+    format: pdfOptions.format || "A4",
+    landscape: pdfOptions.landscape || false,
+    printBackground: true,
     args: [
       "--no-sandbox",
       "--disable-setuid-sandbox",
       "--disable-dev-shm-usage",
-      "--disable-gpu",
     ],
-  });
-  const page = await browser.newPage();
-  await page.setContent(html, { waitUntil: "networkidle0" });
-  const pdfData = await page.pdf({
-    printBackground: true,
-    ...pdfOptions,
-  });
-  await browser.close();
-  // Puppeteer returns Uint8Array in newer versions — convert to proper Node.js Buffer
-  return Buffer.from(pdfData);
+  };
+  const file = { content: html };
+  const pdfBuffer = await htmlPdf.generatePdf(file, options);
+  return Buffer.from(pdfBuffer);
 }
 
 // ======================================
