@@ -22,7 +22,7 @@ function GasManagement() {
     try {
       const token = localStorage.getItem("token");
 
-      const res = await axios.get("${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/rice-gas/gas", {
+      const res = await axios.get(import.meta.env.VITE_API_URL || "http://localhost:5000"/api/rice-gas/gas", {
         headers: {
           Authorization: `Bearer ${token}`,
         },

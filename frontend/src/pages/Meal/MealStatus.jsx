@@ -13,7 +13,7 @@ function MealStatus() {
       setLoading(true);
 
       const res = await axios.post(
-        "${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/meal-request/create",
+        import.meta.env.VITE_API_URL || "http://localhost:5000"/api/meal-request/create",
         { requestType },
         {
           headers: {

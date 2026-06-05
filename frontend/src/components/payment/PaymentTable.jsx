@@ -14,7 +14,7 @@ function PaymentTable() {
   const fetchPayments = async () => {
     try {
       const res = await axios.get(
-        "${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/payment/all",
+        import.meta.env.VITE_API_URL || "http://localhost:5000"/api/payment/all",
 
         {
           headers: {

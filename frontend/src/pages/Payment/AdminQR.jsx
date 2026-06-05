@@ -19,7 +19,7 @@ function AdminQR() {
       formData.append("qr", qr);
 
       const res = await axios.post(
-        "${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/admin-qr/upload",
+        import.meta.env.VITE_API_URL || "http://localhost:5000"/api/admin-qr/upload",
         formData,
         {
           headers: {

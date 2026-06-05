@@ -11,7 +11,7 @@ function LockBanner() {
     const checkLock = async () => {
       try {
         const res = await axios.get(
-          "${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/month-lock/status",
+          import.meta.env.VITE_API_URL || "http://localhost:5000"/api/month-lock/status",
           { headers: { Authorization: `Bearer ${token}` } },
         );
         if (res.data.success && res.data.isLocked) {

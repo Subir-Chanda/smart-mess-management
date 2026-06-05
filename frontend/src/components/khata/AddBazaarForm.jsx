@@ -29,7 +29,7 @@ function AddBazaarForm({ fetchBazaar }) {
       const token = localStorage.getItem("token");
 
       const res = await axios.get(
-        "${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/member/all-members",
+        import.meta.env.VITE_API_URL || "http://localhost:5000"/api/member/all-members",
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -95,7 +95,7 @@ function AddBazaarForm({ fetchBazaar }) {
         form.append("billImage", billImage);
       }
 
-      await axios.post("${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/meal/add-bazaar", form, {
+      await axios.post(import.meta.env.VITE_API_URL || "http://localhost:5000"/api/meal/add-bazaar", form, {
         headers: {
           Authorization: `Bearer ${token}`,
         },

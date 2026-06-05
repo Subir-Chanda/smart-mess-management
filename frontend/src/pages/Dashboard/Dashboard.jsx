@@ -46,41 +46,41 @@ function Dashboard() {
         guestRes,
         monthlyCalcRes,
       ] = await Promise.all([
-        axios.get("${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/member/all-members", {
+        axios.get(import.meta.env.VITE_API_URL || "http://localhost:5000"/api/member/all-members", {
           headers: {
             Authorization: `Bearer ${token}`,
           },
         }),
 
-        axios.get("${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/member/pending-users", {
+        axios.get(import.meta.env.VITE_API_URL || "http://localhost:5000"/api/member/pending-users", {
           headers: {
             Authorization: `Bearer ${token}`,
           },
         }),
 
-        axios.get("${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/dashboard/stats", {
+        axios.get(import.meta.env.VITE_API_URL || "http://localhost:5000"/api/dashboard/stats", {
           headers: {
             Authorization: `Bearer ${token}`,
           },
         }),
 
-        axios.get("${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/payment/all", {
+        axios.get(import.meta.env.VITE_API_URL || "http://localhost:5000"/api/payment/all", {
           headers: {
             Authorization: `Bearer ${token}`,
           },
         }),
 
-        axios.get("${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/meal-request/all", {
+        axios.get(import.meta.env.VITE_API_URL || "http://localhost:5000"/api/meal-request/all", {
           headers: {
             Authorization: `Bearer ${token}`,
           },
         }),
-        axios.get("${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/guest-meal/total-cost", {
+        axios.get(import.meta.env.VITE_API_URL || "http://localhost:5000"/api/guest-meal/total-cost", {
           headers: {
             Authorization: `Bearer ${token}`,
           },
         }),
-        axios.get("${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/monthly-calculation/current", {
+        axios.get(import.meta.env.VITE_API_URL || "http://localhost:5000"/api/monthly-calculation/current", {
           headers: {
             Authorization: `Bearer ${token}`,
           },

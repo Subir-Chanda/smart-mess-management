@@ -15,7 +15,7 @@ function AddRiceForm({ fetchRice }) {
       const token = localStorage.getItem("token");
 
       await axios.post(
-        "${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/rice-gas/add-rice",
+        import.meta.env.VITE_API_URL || "http://localhost:5000"/api/rice-gas/add-rice",
         formData,
         {
           headers: {

@@ -33,7 +33,7 @@ function BazaarLedger() {
       const token = localStorage.getItem("token");
 
       const res = await axios.get(
-        "${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/meal/daily-bazaar",
+        import.meta.env.VITE_API_URL || "http://localhost:5000"/api/meal/daily-bazaar",
         {
           headers: {
             Authorization: `Bearer ${token}`,

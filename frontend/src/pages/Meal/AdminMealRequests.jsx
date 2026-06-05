@@ -11,7 +11,7 @@ function AdminMealRequests() {
   const fetchRequests = async () => {
     try {
       const res = await axios.get(
-        "${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/meal-request/all",
+        import.meta.env.VITE_API_URL || "http://localhost:5000"/api/meal-request/all",
         {
           headers: {
             Authorization: `Bearer ${token}`,
