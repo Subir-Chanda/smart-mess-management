@@ -1,0 +1,12 @@
+.admin-submenu {
+  color: white;
+  text-decoration: none;
+  padding: 10px 15px;
+  border-radius: 10px;
+  background: #334155;
+  transition: 0.3s;
+}
+
+.admin-submenu:hover {
+  background: #475569;
+}

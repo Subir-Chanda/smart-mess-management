@@ -1,0 +1,237 @@
+/* ======================================
+   PAYMENT PAGE
+====================================== */
+
+.payment-page-content {
+  flex: 1;
+  padding: 25px;
+  background: #f3f4f6;
+}
+
+/* ======================================
+   MAIN CARD
+====================================== */
+
+.payment-main-card {
+  background: white;
+
+  border-radius: 20px;
+
+  padding: 35px;
+
+  margin-top: 0;
+
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.08);
+}
+
+/* ======================================
+   TITLE
+====================================== */
+
+.payment-main-card h1 {
+  text-align: center;
+
+  font-size: 58px;
+
+  font-weight: 700;
+
+  margin-bottom: 35px;
+
+  color: #111827;
+}
+
+/* ======================================
+   FORM WRAPPER
+====================================== */
+
+.payment-form-wrapper {
+  max-width: 420px;
+
+  margin: auto;
+}
+
+/* ======================================
+   QR IMAGE
+====================================== */
+
+.payment-qr {
+  width: 260px;
+  height: 260px;
+
+  object-fit: cover;
+
+  border-radius: 14px;
+
+  border: 1px solid #ddd;
+
+  background: white;
+
+  padding: 10px;
+}
+
+/* ======================================
+   INPUTS
+====================================== */
+
+.payment-input {
+  height: 52px;
+
+  border-radius: 10px;
+
+  font-size: 16px;
+}
+
+/* ======================================
+   BUTTON
+====================================== */
+
+.payment-submit-btn {
+  height: 52px;
+
+  font-size: 18px;
+
+  font-weight: 600;
+
+  border-radius: 10px;
+}
+
+/* ======================================
+   PAYMENT TABLE
+====================================== */
+
+.payment-table-wrapper {
+  background: white;
+
+  padding: 25px;
+
+  border-radius: 18px;
+
+  overflow-x: auto;
+
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.08);
+}
+
+/* ======================================
+   TABLE
+====================================== */
+
+.payment-table {
+  width: 100%;
+
+  min-width: 850px;
+
+  border-collapse: collapse;
+}
+
+/* ======================================
+   TABLE HEAD
+====================================== */
+
+.payment-table th {
+  background: #02112b;
+
+  color: white;
+
+  padding: 16px;
+
+  text-align: center;
+
+  font-size: 17px;
+}
+
+/* ======================================
+   TABLE BODY
+====================================== */
+
+.payment-table td {
+  padding: 16px;
+
+  border-bottom: 1px solid #ddd;
+
+  text-align: center;
+
+  font-size: 16px;
+}
+
+/* ======================================
+   LINKS
+====================================== */
+
+.payment-table a {
+  text-decoration: none;
+
+  color: #2563eb;
+
+  font-weight: 600;
+}
+
+/* ======================================
+   ACTION BUTTONS
+====================================== */
+
+.payment-table button {
+  padding: 8px 14px;
+
+  border: none;
+
+  border-radius: 8px;
+
+  margin: 0 4px;
+
+  font-weight: 600;
+
+  cursor: pointer;
+}
+
+/* APPROVE */
+
+.payment-table button:first-child {
+  background: #10b981;
+
+  color: white;
+}
+
+/* REJECT */
+
+.payment-table button:last-child {
+  background: #ef4444;
+
+  color: white;
+}
+
+/* ======================================
+   EMPTY STATE
+====================================== */
+
+.payment-table td[colspan] {
+  padding: 30px;
+
+  font-size: 18px;
+
+  font-weight: 600;
+
+  color: #6b7280;
+}
+
+/* ======================================
+   MOBILE
+====================================== */
+
+@media (max-width: 768px) {
+  .payment-page-content {
+    padding: 15px;
+  }
+
+  .payment-main-card {
+    padding: 25px;
+  }
+
+  .payment-main-card h1 {
+    font-size: 40px;
+  }
+
+  .payment-qr {
+    width: 210px;
+    height: 210px;
+  }
+}
