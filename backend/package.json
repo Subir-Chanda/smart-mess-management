@@ -16,7 +16,6 @@
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "fs-extra": "^11.3.5",
-    "html-pdf-node": "^1.0.8",
     "imagekit": "^6.0.0",
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.6.2",

@@ -1,501 +1,813 @@
 // ======================================
-// PDF GENERATOR — uses html-pdf-node (HTML → PDF)
-// Run: npm install html-pdf-node
+// PDF GENERATOR — uses PDFKit (pure JS, no browser needed)
+// Run: npm install pdfkit
 // ======================================
 
-const htmlPdf = require("html-pdf-node");
+const PDFDocument = require("pdfkit");
 
 // ======================================
-// SHARED BASE STYLES
+// COLORS & SHARED CONSTANTS
 // ======================================
 
-const baseStyles = `
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body {
-    font-family: 'Georgia', 'Times New Roman', serif;
-    background: #f5f0e6;
-    color: #1a1a1a;
-    padding: 40px;
-  }
-  h1 {
-    font-size: 38px;
-    font-weight: 900;
-    text-align: center;
-    margin-bottom: 30px;
-    letter-spacing: -0.5px;
-  }
-  h2 {
-    font-size: 22px;
-    font-weight: 700;
-    margin-bottom: 12px;
-  }
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    background: white;
-    table-layout: fixed;
-  }
-  th {
-    background: #c8c8c8;
-    font-weight: 700;
-    font-size: 13px;
-    padding: 10px 12px;
-    text-align: center;
-    border: 1px solid #999;
-    word-wrap: break-word;
-  }
-  td {
-    padding: 10px 12px;
-    font-size: 13px;
-    text-align: center;
-    border: 1px solid #ccc;
-    background: white;
-    font-variant-numeric: tabular-nums;
-    word-wrap: break-word;
-  }
-  .num { 
-    text-align: right; 
-    padding-right: 14px !important;
-    font-variant-numeric: tabular-nums;
-    font-feature-settings: "tnum";
-    letter-spacing: 0;
-  }
-  .section { margin-bottom: 30px; }
-`;
+const C = {
+  bg: "#f5f0e6",
+  white: "#ffffff",
+  headerBg: "#c8c8c8",
+  darkHeaderBg: "#02112b",
+  altRow: "#f9f9f9",
+  border: "#cccccc",
+  darkBorder: "#999999",
+  text: "#1a1a1a",
+  green: "#006400",
+  red: "#cc0000",
+  gray: "#999999",
+  subRow: "#f0f0f0",
+};
 
 // ======================================
-// HELPER — launch puppeteer & save PDF
+// HELPER — buffer a PDFDocument to Buffer
 // ======================================
 
-async function htmlToPdf(html, pdfOptions = {}) {
-  const options = {
-    format: pdfOptions.format || "A4",
-    landscape: pdfOptions.landscape || false,
-    printBackground: true,
-    args: [
-      "--no-sandbox",
-      "--disable-setuid-sandbox",
-      "--disable-dev-shm-usage",
-    ],
-  };
-  const file = { content: html };
-  const pdfBuffer = await htmlPdf.generatePdf(file, options);
-  return Buffer.from(pdfBuffer);
+function pdfToBuffer(doc) {
+  return new Promise((resolve, reject) => {
+    const chunks = [];
+    doc.on("data", (chunk) => chunks.push(chunk));
+    doc.on("end", () => resolve(Buffer.concat(chunks)));
+    doc.on("error", reject);
+    doc.end();
+  });
 }
 
 // ======================================
-// 1. MONTHLY CALCULATION PDF
+// DRAWING HELPERS
+// ======================================
+
+function drawRect(doc, x, y, w, h, fillColor, strokeColor) {
+  doc.save();
+  if (fillColor) doc.fillColor(fillColor);
+  if (strokeColor) {
+    doc.rect(x, y, w, h).fillAndStroke(fillColor || C.white, strokeColor);
+  } else {
+    doc.rect(x, y, w, h).fill(fillColor || C.white);
+  }
+  doc.restore();
+}
+
+function drawCell(doc, x, y, w, h, text, opts = {}) {
+  const {
+    fillColor = C.white,
+    textColor = C.text,
+    fontSize = 9,
+    bold = false,
+    align = "center",
+    paddingX = 4,
+    paddingY = 3,
+  } = opts;
+
+  // cell background + border
+  doc.save().rect(x, y, w, h).fillAndStroke(fillColor, C.border).restore();
+
+  // text
+  const textY = y + paddingY + (h - fontSize - paddingY * 2) / 2;
+  doc
+    .save()
+    .fillColor(textColor)
+    .fontSize(fontSize)
+    .font(bold ? "Helvetica-Bold" : "Helvetica")
+    .text(String(text ?? ""), x + paddingX, textY, {
+      width: w - paddingX * 2,
+      align,
+      lineBreak: false,
+      ellipsis: true,
+    })
+    .restore();
+}
+
+function drawHeader(doc, x, y, w, h, text, opts = {}) {
+  drawCell(doc, x, y, w, h, text, {
+    fillColor: opts.fillColor || C.headerBg,
+    textColor: opts.textColor || C.text,
+    bold: true,
+    align: opts.align || "center",
+    fontSize: opts.fontSize || 9,
+    ...opts,
+  });
+}
+
+// ======================================
+// 1. MONTHLY CALCULATION PDF  (A3 landscape)
 // ======================================
 
 exports.generateMonthlyPdf = async ({ data }) => {
   const rows = Array.isArray(data.rows) ? data.rows : [];
-  const rowsHtml = rows
-    .map(
-      (row, i) => `
-    <tr style="background:${i % 2 === 0 ? "#fff" : "#f9f9f9"}">
-      <td style="font-weight:700;text-align:left;padding-left:16px">${row.name}</td>
-      <td class="num">₹${row.deposit ?? 0}</td>
-      <td>${row.mealCount ?? row.actualMealCount ?? 0}</td>
-      <td>${row.billableMeals ?? row.mealCount ?? 0}</td>
-      <td class="num">₹${Number(row.mealCost ?? 0).toFixed(2)}</td>
-      <td class="num">₹${Number(row.guestCost ?? 0).toFixed(2)}</td>
-      <td class="num">₹${Number(row.rannaCost ?? 0).toFixed(2)}</td>
-      <td class="num">₹${Number(row.kajerCost ?? 0).toFixed(2)}</td>
-      <td class="num">₹${Number(row.fixedCost ?? 0).toFixed(2)}</td>
-      <td class="num">₹${Number(row.totalCost ?? 0).toFixed(2)}</td>
-      <td class="num" style="font-weight:700">₹${Number(row.due ?? 0).toFixed(2)}</td>
-    </tr>
-  `,
+
+  // A3 landscape
+  const doc = new PDFDocument({
+    size: "A3",
+    layout: "landscape",
+    margin: 30,
+    info: { Title: "Monthly Calculation" },
+  });
+
+  const pageW = doc.page.width - 60; // usable width
+  const startX = 30;
+  let y = 30;
+
+  // Title
+  doc
+    .fillColor(C.text)
+    .fontSize(22)
+    .font("Helvetica-Bold")
+    .text("Monthly Calculation", startX, y, { width: pageW, align: "center" });
+  y += 32;
+
+  // Info row
+  doc
+    .fontSize(11)
+    .font("Helvetica-Bold")
+    .fillColor(C.text)
+    .text(`Month : ${data.month} ${data.year}`, startX, y)
+    .text(`Meal Rate : ₹${data.mealRate}`, startX, y, {
+      width: pageW,
+      align: "right",
+    });
+  y += 22;
+
+  // Column definitions
+  const colDefs = [
+    { label: "Name", w: 0.1, align: "left" },
+    { label: "Deposit", w: 0.07, align: "right" },
+    { label: "Actual Meals", w: 0.08, align: "center" },
+    { label: "Billable Meals", w: 0.08, align: "center" },
+    { label: "Meal Cost", w: 0.08, align: "right" },
+    { label: "Guest Cost", w: 0.08, align: "right" },
+    { label: "Ranna Mashi", w: 0.09, align: "right" },
+    { label: "Kajer Mashi", w: 0.09, align: "right" },
+    { label: "Fixed Cost", w: 0.08, align: "right" },
+    { label: "Total Cost", w: 0.09, align: "right" },
+    { label: "Due / Balance", w: 0.09, align: "right" },
+  ];
+
+  // Normalize widths to pixels
+  const cols = colDefs.map((c) => ({ ...c, w: Math.floor(c.w * pageW) }));
+  const rowH = 20;
+  const hdrH = 24;
+
+  // Header row
+  let x = startX;
+  cols.forEach((col) => {
+    drawHeader(doc, x, y, col.w, hdrH, col.label, {
+      align: col.align === "right" ? "center" : col.align,
+      fontSize: 8,
+    });
+    x += col.w;
+  });
+  y += hdrH;
+
+  // Data rows
+  rows.forEach((row, i) => {
+    const bg = i % 2 === 0 ? C.white : C.altRow;
+    x = startX;
+    const cells = [
+      { val: row.name, align: "left", bold: true },
+      { val: `₹${row.deposit ?? 0}`, align: "right" },
+      { val: row.mealCount ?? row.actualMealCount ?? 0, align: "center" },
+      { val: row.billableMeals ?? row.mealCount ?? 0, align: "center" },
+      { val: `₹${Number(row.mealCost ?? 0).toFixed(2)}`, align: "right" },
+      { val: `₹${Number(row.guestCost ?? 0).toFixed(2)}`, align: "right" },
+      { val: `₹${Number(row.rannaCost ?? 0).toFixed(2)}`, align: "right" },
+      { val: `₹${Number(row.kajerCost ?? 0).toFixed(2)}`, align: "right" },
+      { val: `₹${Number(row.fixedCost ?? 0).toFixed(2)}`, align: "right" },
+      { val: `₹${Number(row.totalCost ?? 0).toFixed(2)}`, align: "right" },
+      {
+        val: `₹${Number(row.due ?? 0).toFixed(2)}`,
+        align: "right",
+        bold: true,
+      },
+    ];
+    cols.forEach((col, ci) => {
+      const cell = cells[ci];
+      drawCell(doc, x, y, col.w, rowH, cell.val, {
+        fillColor: bg,
+        align: cell.align,
+        bold: cell.bold || false,
+        fontSize: 8,
+        paddingX: 5,
+      });
+      x += col.w;
+    });
+    y += rowH;
+  });
+
+  y += 20;
+
+  // Summary boxes (side by side)
+  const boxW = Math.floor(pageW / 2) - 10;
+  const box1X = startX;
+  const box2X = startX + boxW + 20;
+  const boxY = y;
+
+  // Box 1
+  doc.rect(box1X, boxY, boxW, 80).stroke(C.border);
+  doc
+    .fontSize(10)
+    .font("Helvetica-Bold")
+    .fillColor(C.text)
+    .text("Summary", box1X + 10, boxY + 8);
+  doc
+    .moveTo(box1X + 10, boxY + 20)
+    .lineTo(box1X + boxW - 10, boxY + 20)
+    .stroke(C.border);
+  doc
+    .fontSize(9)
+    .font("Helvetica")
+    .text(`Total Bazaar Cost : ₹${data.totalBazaarCost}`, box1X + 10, boxY + 26)
+    .text(
+      `Total Guest Cost : ₹${data.totalGuestRecovery ?? data.totalGuestCost}`,
+      box1X + 10,
+      boxY + 40,
     )
-    .join("");
+    .text(`Total Fixed Cost : ₹${data.totalFixedCost}`, box1X + 10, boxY + 54);
 
-  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
-  <style>
-    ${baseStyles}
-    .info-row { display:flex; justify-content:space-between; font-size:15px; font-weight:600; margin-bottom:20px; }
-    .summary-grid { display:flex; justify-content:space-between; margin-top:30px; gap:30px; }
-    .summary-box { flex:1; background:white; border:1px solid #ccc; border-radius:8px; padding:20px; }
-    .summary-box h3 { font-size:16px; margin-bottom:12px; border-bottom:2px solid #eee; padding-bottom:8px; }
-    .summary-box p { font-size:14px; margin-bottom:6px; }
-    .total-box { margin-top:24px; background:white; border:1px solid #ccc; border-radius:8px; padding:20px; font-size:16px; font-weight:700; line-height:2; }
-  </style>
-  </head><body>
-  <h1>Monthly Calculation</h1>
-  <div class="info-row">
-    <span>Month : ${data.month} ${data.year}</span>
-    <span>Meal Rate : ₹${data.mealRate}</span>
-  </div>
+  // Box 2
+  doc.rect(box2X, boxY, boxW, 80).stroke(C.border);
+  doc
+    .fontSize(10)
+    .font("Helvetica-Bold")
+    .fillColor(C.text)
+    .text("Additional Costs", box2X + 10, boxY + 8);
+  doc
+    .moveTo(box2X + 10, boxY + 20)
+    .lineTo(box2X + boxW - 10, boxY + 20)
+    .stroke(C.border);
+  doc
+    .fontSize(9)
+    .font("Helvetica")
+    .text(
+      `Total Mashi Cost : ₹${data.totalMashiCost ?? 0}`,
+      box2X + 10,
+      boxY + 26,
+    )
+    .text(
+      `— Ranna Mashi Rate : ₹${data.rannaRate ?? 0} / member`,
+      box2X + 10,
+      boxY + 38,
+    )
+    .text(
+      `— Kajer Mashi Rate : ₹${data.kajerRate ?? 0} / member`,
+      box2X + 10,
+      boxY + 50,
+    )
+    .font("Helvetica-Bold")
+    .text(`TOTAL : ₹${data.dueToPaid ?? 0}`, box2X + 10, boxY + 64);
 
-  <table>
-    <colgroup>
-      <col style="width:11%"/>
-      <col style="width:7%"/>
-      <col style="width:8%"/>
-      <col style="width:8%"/>
-      <col style="width:8%"/>
-      <col style="width:8%"/>
-      <col style="width:9%"/>
-      <col style="width:9%"/>
-      <col style="width:8%"/>
-      <col style="width:8%"/>
-      <col style="width:9%"/>
-    </colgroup>
-    <thead>
-      <tr>
-        <th style="text-align:left;padding-left:16px">Name</th>
-        <th>Deposit</th>
-        <th>Actual Meals</th>
-        <th>Billable Meals</th>
-        <th>Meal Cost</th>
-        <th>Guest Cost</th>
-        <th>Ranna Mashi</th>
-        <th>Kajer Mashi</th>
-        <th>Fixed Cost</th>
-        <th>Total Cost</th>
-        <th>Due / Balance</th>
-      </tr>
-    </thead>
-    <tbody>${rowsHtml}</tbody>
-  </table>
+  y = boxY + 100;
 
-  <div class="summary-grid">
-    <div class="summary-box">
-      <h3>Summary</h3>
-      <p>Total Bazaar Cost : ₹${data.totalBazaarCost}</p>
-      <p>Total Guest Cost : ₹${data.totalGuestRecovery ?? data.totalGuestCost}</p>
-      <p>Total Fixed Cost : ₹${data.totalFixedCost}</p>
-    </div>
-    <div class="summary-box">
-      <h3>Additional Costs</h3>
-      <p>Total Mashi Cost : ₹${data.totalMashiCost ?? 0}</p>
-      <p>— Ranna Mashi Rate : ₹${data.rannaRate ?? 0} / member</p>
-      <p>— Kajer Mashi Rate : ₹${data.kajerRate ?? 0} / member</p>
-      <p>Total Rice Cost : ₹${data.totalRiceCost}</p>
-      <p>Total Gas Cost : ₹${data.totalGasCost}</p>
-      <hr style="margin:10px 0;border-color:#eee"/>
-      <p style="font-weight:700">TOTAL : ₹${data.dueToPaid ?? 0}</p>
-    </div>
-  </div>
+  // Totals box
+  doc.rect(startX, y, pageW, 50).stroke(C.border);
+  doc
+    .fontSize(11)
+    .font("Helvetica-Bold")
+    .fillColor(C.text)
+    .text(
+      `Total Due : ₹${Number(data.totalDueAmount).toFixed(2)}`,
+      startX + 16,
+      y + 6,
+    )
+    .text(
+      `Current Mess Balance : ₹${Number(data.currentMessFundBalance).toFixed(2)}`,
+      startX + 16,
+      y + 20,
+    )
+    .text(
+      `Difference : ₹${Number(data.difference).toFixed(2)}`,
+      startX + 16,
+      y + 34,
+    );
 
-  <div class="total-box">
-    Total Due : ₹${Number(data.totalDueAmount).toFixed(2)}<br/>
-    Current Mess Balance : ₹${Number(data.currentMessFundBalance).toFixed(2)}<br/>
-    Difference : ₹${Number(data.difference).toFixed(2)}
-  </div>
-  </body></html>`;
-
-  return await htmlToPdf(html, { format: "A3", landscape: true });
+  return pdfToBuffer(doc);
 };
 
 // ======================================
-// 2. DEPOSIT LEDGER PDF
+// 2. DEPOSIT LEDGER PDF  (A4 portrait)
 // ======================================
 
 exports.generateDepositPdf = async ({ data }) => {
+  const doc = new PDFDocument({
+    size: "A4",
+    margin: 40,
+    info: { Title: "Deposit Ledger" },
+  });
+
+  const pageW = doc.page.width - 80;
+  const startX = 40;
+  let y = 40;
+
+  // Title
+  doc
+    .fontSize(22)
+    .font("Helvetica-Bold")
+    .fillColor(C.text)
+    .text("Deposit Ledger", startX, y, { width: pageW, align: "center" });
+  y += 30;
+
+  doc
+    .fontSize(11)
+    .font("Helvetica-Bold")
+    .text(`${data.month} ${data.year}`, startX, y, {
+      width: pageW,
+      align: "center",
+    });
+  y += 22;
+
+  // Columns
+  const cols = [
+    { label: "Name", w: Math.floor(pageW * 0.45), align: "left" },
+    { label: "Amount", w: Math.floor(pageW * 0.28), align: "right" },
+    { label: "Date", w: Math.floor(pageW * 0.27), align: "center" },
+  ];
+  const rowH = 20;
+  const hdrH = 22;
+
+  // Header
+  let x = startX;
+  cols.forEach((col) => {
+    drawHeader(doc, x, y, col.w, hdrH, col.label, {
+      align: col.align === "right" ? "center" : col.align,
+    });
+    x += col.w;
+  });
+  y += hdrH;
+
   let grandTotal = 0;
 
-  const rowsHtml = data.members
-    .flatMap((member) => {
-      let memberTotal = 0;
-      const depositRows = member.deposits
-        .map((d) => {
-          memberTotal += d.amount;
-          grandTotal += d.amount;
-          return `
-          <tr>
-            <td style="text-align:left;padding-left:16px">${member.name}</td>
-            <td class="num">₹${d.amount}</td>
-            <td>${d.date}/${d.month}/${d.year}</td>
-          </tr>`;
-        })
-        .join("");
+  data.members.forEach((member) => {
+    let memberTotal = 0;
 
-      return [
-        depositRows,
-        `<tr style="background:#f0f0f0;font-weight:700">
-          <td colspan="2" style="text-align:right;padding-right:12px">Subtotal for ${member.name}</td>
-          <td class="num">₹${memberTotal}</td>
-        </tr>`,
+    member.deposits.forEach((d) => {
+      memberTotal += d.amount;
+      grandTotal += d.amount;
+
+      x = startX;
+      const cells = [
+        { val: member.name, align: "left" },
+        { val: `₹${d.amount}`, align: "right" },
+        { val: `${d.date}/${d.month}/${d.year}`, align: "center" },
       ];
-    })
-    .join("");
+      cols.forEach((col, ci) => {
+        drawCell(doc, x, y, col.w, rowH, cells[ci].val, {
+          align: cells[ci].align,
+          fontSize: 9,
+          paddingX: 5,
+        });
+        x += col.w;
+      });
+      y += rowH;
+    });
 
-  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
-  <style>
-    ${baseStyles}
-    .grand { margin-top:24px; font-size:18px; font-weight:700; text-align:right; padding:16px; background:white; border:1px solid #ccc; border-radius:8px; }
-  </style>
-  </head><body>
-  <h1>Deposit Ledger</h1>
-  <p style="text-align:center;margin-bottom:24px;font-size:15px;font-weight:600">
-    ${data.month} ${data.year}
-  </p>
-  <table>
-    <colgroup>
-      <col style="width:45%"/>
-      <col style="width:25%"/>
-      <col style="width:30%"/>
-    </colgroup>
-    <thead>
-      <tr>
-        <th style="text-align:left;padding-left:16px">Name</th>
-        <th>Amount</th>
-        <th>Date</th>
-      </tr>
-    </thead>
-    <tbody>${rowsHtml}</tbody>
-  </table>
-  <div class="grand">Grand Total Deposit : ₹${grandTotal}</div>
-  </body></html>`;
+    // Subtotal row
+    x = startX;
+    drawCell(
+      doc,
+      x,
+      y,
+      cols[0].w + cols[1].w,
+      rowH,
+      `Subtotal for ${member.name}`,
+      {
+        fillColor: C.subRow,
+        bold: true,
+        align: "right",
+        fontSize: 9,
+        paddingX: 8,
+      },
+    );
+    drawCell(
+      doc,
+      x + cols[0].w + cols[1].w,
+      y,
+      cols[2].w,
+      rowH,
+      `₹${memberTotal}`,
+      { fillColor: C.subRow, bold: true, align: "right", fontSize: 9 },
+    );
+    y += rowH;
+  });
 
-  return await htmlToPdf(html, { format: "A4" });
+  y += 20;
+  doc
+    .fontSize(13)
+    .font("Helvetica-Bold")
+    .fillColor(C.text)
+    .text(`Grand Total Deposit : ₹${grandTotal}`, startX, y, {
+      width: pageW,
+      align: "right",
+    });
+
+  return pdfToBuffer(doc);
 };
 
 // ======================================
-// 3. DAILY MEAL KHATA PDF
+// 3. DAILY MEAL KHATA PDF  (A2 landscape)
 // ======================================
 
 exports.generateMealKhataPdf = async ({ data }) => {
-  const days = Array.from({ length: 31 }, (_, i) => i + 1);
-
-  const dayHeaders = days
-    .map(
-      (d) => `
-    <th colspan="2" style="font-size:11px;padding:6px 2px">${d}</th>`,
-    )
-    .join("");
-
-  const ldHeaders = days
-    .map(
-      () => `
-    <th style="font-size:10px;padding:4px 1px;font-weight:600">L</th>
-    <th style="font-size:10px;padding:4px 1px;font-weight:600">D</th>`,
-    )
-    .join("");
-
-  const memberRows = data.members
-    .map(
-      (member, i) => `
-    <tr style="background:${i % 2 === 0 ? "#fff" : "#f9f9f9"}">
-      <td style="font-weight:700;text-align:left;padding-left:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:120px">${member.name}</td>
-      ${days
-        .map((day) => {
-          const e = member.entries[day] || {};
-          const l = e.lunch === true ? "✓" : e.lunch === false ? "✗" : "-";
-          const d = e.dinner === true ? "✓" : e.dinner === false ? "✗" : "-";
-          const lColor =
-            e.lunch === true
-              ? "#006400"
-              : e.lunch === false
-                ? "#cc0000"
-                : "#999";
-          const dColor =
-            e.dinner === true
-              ? "#006400"
-              : e.dinner === false
-                ? "#cc0000"
-                : "#999";
-          return `
-          <td style="color:${lColor};font-size:10px;padding:4px 1px">${l}</td>
-          <td style="color:${dColor};font-size:10px;padding:4px 1px">${d}</td>`;
-        })
-        .join("")}
-      <td style="font-weight:700;font-size:12px">${member.totalMeals}</td>
-    </tr>`,
-    )
-    .join("");
-
-  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
-  <style>
-    ${baseStyles}
-    body { padding: 24px 16px; }
-    h1 { font-size:30px; margin-bottom:8px; }
-    .subtitle { text-align:center; font-size:16px; margin-bottom:24px; font-weight:600; }
-    table { font-size:10px; }
-    th, td { padding: 5px 2px; }
-    th { background:#c8c8c8; }
-  </style>
-  </head><body>
-  <h1>${data.month} ${data.year}</h1>
-  <div class="subtitle">Daily Meal Khata</div>
-  <table style="table-layout:fixed">
-    <colgroup>
-      <col style="width:120px"/>
-      ${days.map(() => `<col style="width:18px"/><col style="width:18px"/>`).join("")}
-      <col style="width:36px"/>
-    </colgroup>
-    <thead>
-      <tr>
-        <th rowspan="2" style="text-align:left;padding-left:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Name</th>
-        ${dayHeaders}
-        <th rowspan="2">Total</th>
-      </tr>
-      <tr>${ldHeaders}</tr>
-    </thead>
-    <tbody>${memberRows}</tbody>
-  </table>
-
-  <div style="margin-top:20px;font-size:13px;font-weight:600">
-    Grand Total Meals : ${data.grandTotal}
-  </div>
-  </body></html>`;
-
-  return await htmlToPdf(html, {
-    format: "A2",
-    landscape: true,
-    margin: { top: "15px", bottom: "15px", left: "15px", right: "15px" },
+  const doc = new PDFDocument({
+    size: "A2",
+    layout: "landscape",
+    margin: 20,
+    info: { Title: "Daily Meal Khata" },
   });
+
+  const pageW = doc.page.width - 40;
+  const startX = 20;
+  let y = 20;
+
+  // Title
+  doc
+    .fontSize(18)
+    .font("Helvetica-Bold")
+    .fillColor(C.text)
+    .text(`${data.month} ${data.year} — Daily Meal Khata`, startX, y, {
+      width: pageW,
+      align: "center",
+    });
+  y += 28;
+
+  const days = Array.from({ length: 31 }, (_, i) => i + 1);
+  const nameColW = 110;
+  const totalColW = 32;
+  const remaining = pageW - nameColW - totalColW;
+  const dayColW = Math.floor(remaining / 31 / 2); // L and D each
+  const actualDayW = dayColW * 2;
+
+  const hdrH = 14;
+  const rowH = 14;
+  const fontSize = 7;
+
+  // Header row 1 — day numbers
+  let x = startX;
+  drawHeader(doc, x, y, nameColW, hdrH * 2, "Name", {
+    align: "left",
+    fontSize,
+  });
+  x += nameColW;
+  days.forEach((d) => {
+    drawHeader(doc, x, y, actualDayW, hdrH, String(d), { fontSize: 6 });
+    x += actualDayW;
+  });
+  drawHeader(doc, x, y, totalColW, hdrH * 2, "Total", { fontSize });
+  y += hdrH;
+
+  // Header row 2 — L / D sub-headers
+  x = startX + nameColW;
+  days.forEach(() => {
+    drawHeader(doc, x, y, dayColW, hdrH, "L", { fontSize: 6 });
+    drawHeader(doc, x + dayColW, y, dayColW, hdrH, "D", { fontSize: 6 });
+    x += actualDayW;
+  });
+  y += hdrH;
+
+  // Member rows
+  data.members.forEach((member, i) => {
+    const bg = i % 2 === 0 ? C.white : C.altRow;
+    x = startX;
+
+    drawCell(doc, x, y, nameColW, rowH, member.name, {
+      fillColor: bg,
+      bold: true,
+      align: "left",
+      fontSize,
+      paddingX: 5,
+    });
+    x += nameColW;
+
+    days.forEach((day) => {
+      const e = member.entries[day] || {};
+      const lText = e.lunch === true ? "✓" : e.lunch === false ? "✗" : "-";
+      const dText = e.dinner === true ? "✓" : e.dinner === false ? "✗" : "-";
+      const lColor =
+        e.lunch === true ? C.green : e.lunch === false ? C.red : C.gray;
+      const dColor =
+        e.dinner === true ? C.green : e.dinner === false ? C.red : C.gray;
+
+      drawCell(doc, x, y, dayColW, rowH, lText, {
+        fillColor: bg,
+        textColor: lColor,
+        fontSize: 6,
+        paddingX: 1,
+      });
+      drawCell(doc, x + dayColW, y, dayColW, rowH, dText, {
+        fillColor: bg,
+        textColor: dColor,
+        fontSize: 6,
+        paddingX: 1,
+      });
+      x += actualDayW;
+    });
+
+    drawCell(doc, x, y, totalColW, rowH, String(member.totalMeals), {
+      fillColor: bg,
+      bold: true,
+      align: "center",
+      fontSize,
+    });
+    y += rowH;
+  });
+
+  y += 14;
+  doc
+    .fontSize(11)
+    .font("Helvetica-Bold")
+    .fillColor(C.text)
+    .text(`Grand Total Meals : ${data.grandTotal}`, startX, y);
+
+  return pdfToBuffer(doc);
 };
 
 // ======================================
-// 4. MEAL GRID PDF
+// 4. MEAL GRID PDF  (A2 landscape)
 // ======================================
 
 exports.generateMealGridPdf = async ({ data }) => {
-  const days = Array.from({ length: 31 }, (_, i) => i + 1);
+  const doc = new PDFDocument({
+    size: "A2",
+    layout: "landscape",
+    margin: 20,
+    info: { Title: "Meal Grid" },
+  });
 
-  const dayHeaders = days
-    .map(
-      (d) =>
-        `<th style="font-size:10px;padding:5px 2px;color:white;background:#02112b">${d}</th>`,
-    )
-    .join("");
+  const pageW = doc.page.width - 40;
+  const startX = 20;
+  let y = 20;
+
+  // Title
+  doc
+    .fontSize(18)
+    .font("Helvetica-Bold")
+    .fillColor(C.text)
+    .text(`Meal Grid — ${data.month} ${data.year}`, startX, y, {
+      width: pageW,
+      align: "center",
+    });
+  y += 28;
+
+  const days = Array.from({ length: 31 }, (_, i) => i + 1);
+  const nameColW = 110;
+  const totalColW = 36;
+  const remaining = pageW - nameColW - totalColW;
+  const dayColW = Math.floor(remaining / 31);
+
+  const hdrH = 18;
+  const rowH = 16;
+  const fontSize = 7;
+
+  // Header
+  let x = startX;
+  drawHeader(doc, x, y, nameColW, hdrH, "Member", {
+    fillColor: C.darkHeaderBg,
+    textColor: C.white,
+    align: "left",
+    fontSize: 8,
+  });
+  x += nameColW;
+  days.forEach((d) => {
+    drawHeader(doc, x, y, dayColW, hdrH, String(d), {
+      fillColor: C.darkHeaderBg,
+      textColor: C.white,
+      fontSize: 6,
+    });
+    x += dayColW;
+  });
+  drawHeader(doc, x, y, totalColW, hdrH, "Total", {
+    fillColor: C.darkHeaderBg,
+    textColor: C.white,
+    fontSize: 8,
+  });
+  y += hdrH;
 
   let grandTotal = 0;
 
-  const memberRows = data.members
-    .map((member, i) => {
-      grandTotal += member.totalMeals;
-      const rowBg = i % 2 === 0 ? "#f8fafc" : "#ffffff";
-      const cells = days
-        .map((day) => {
-          const e = member.entries[day] || {};
-          const hasLunch = e.lunch === true;
-          const hasDinner = e.dinner === true;
-          const noLunch = e.lunch === false;
-          const noDinner = e.dinner === false;
+  data.members.forEach((member, i) => {
+    grandTotal += member.totalMeals;
+    const bg = i % 2 === 0 ? "#f8fafc" : C.white;
+    x = startX;
 
-          const lText = hasLunch ? "L" : noLunch ? "-" : "";
-          const dText = hasDinner ? "D" : noDinner ? "-" : "";
-          const lColor = hasLunch ? "#006400" : "#cc0000";
-          const dColor = hasDinner ? "#006400" : "#cc0000";
+    drawCell(doc, x, y, nameColW, rowH, member.name, {
+      fillColor: bg,
+      bold: true,
+      align: "left",
+      fontSize,
+      paddingX: 5,
+    });
+    x += nameColW;
 
-          return `<td style="background:${rowBg};padding:3px 1px">
-            <span style="color:${lColor};font-size:9px;font-weight:600">${lText}</span>
-            <span style="color:${dColor};font-size:9px;font-weight:600;margin-left:2px">${dText}</span>
-          </td>`;
-        })
-        .join("");
+    days.forEach((day) => {
+      const e = member.entries[day] || {};
+      const lText = e.lunch === true ? "L" : e.lunch === false ? "-" : "";
+      const dText = e.dinner === true ? "D" : e.dinner === false ? "-" : "";
+      const lColor = e.lunch === true ? C.green : C.red;
+      const dColor = e.dinner === true ? C.green : C.red;
+      const cellText = lText + (lText && dText ? " " : "") + dText;
 
-      return `
-      <tr>
-        <td style="background:${rowBg};font-weight:700;text-align:left;padding-left:8px;font-size:11px;white-space:nowrap">${member.name}</td>
-        ${cells}
-        <td style="background:${rowBg};font-weight:700;font-size:12px">${member.totalMeals}</td>
-      </tr>`;
-    })
-    .join("");
+      // draw cell manually to support two-color text
+      doc.rect(x, y, dayColW, rowH).fillAndStroke(bg, C.border);
+      if (lText) {
+        doc
+          .fontSize(6)
+          .font("Helvetica-Bold")
+          .fillColor(lColor)
+          .text(lText, x + 1, y + 4, {
+            width: Math.floor(dayColW / 2) - 1,
+            align: "center",
+            lineBreak: false,
+          });
+      }
+      if (dText) {
+        doc
+          .fontSize(6)
+          .font("Helvetica-Bold")
+          .fillColor(dColor)
+          .text(dText, x + Math.floor(dayColW / 2), y + 4, {
+            width: Math.floor(dayColW / 2),
+            align: "center",
+            lineBreak: false,
+          });
+      }
+      x += dayColW;
+    });
 
-  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
-  <style>
-    ${baseStyles}
-    body { padding: 20px 12px; }
-    h1 { font-size:26px; margin-bottom:4px; }
-    th { background:#02112b; color:white; border-color:#02112b; }
-    .total-th { background:#02112b; color:white; }
-    .legend { margin-top:16px; font-size:12px; font-weight:600; }
-    .grand { margin-top:12px; font-size:16px; font-weight:700; }
-  </style>
-  </head><body>
-  <h1>Meal Grid — ${data.month} ${data.year}</h1>
-  <table style="margin-top:16px">
-    <thead>
-      <tr>
-        <th style="text-align:left;padding-left:8px;background:#02112b;color:white">Member</th>
-        ${dayHeaders}
-        <th class="total-th">Total</th>
-      </tr>
-    </thead>
-    <tbody>${memberRows}</tbody>
-  </table>
-  <div class="legend">
-    <span style="color:#006400">L = Lunch taken &nbsp;&nbsp; D = Dinner taken &nbsp;&nbsp;</span>
-    <span style="color:#cc0000">- = Meal not taken</span>
-  </div>
-  <div class="grand">Grand Total Meals : ${grandTotal}</div>
-  </body></html>`;
-
-  return await htmlToPdf(html, {
-    format: "A2",
-    landscape: true,
-    margin: { top: "15px", bottom: "15px", left: "12px", right: "12px" },
+    drawCell(doc, x, y, totalColW, rowH, String(member.totalMeals), {
+      fillColor: bg,
+      bold: true,
+      align: "center",
+      fontSize,
+    });
+    y += rowH;
   });
+
+  y += 14;
+  doc
+    .fontSize(10)
+    .font("Helvetica-Bold")
+    .fillColor(C.green)
+    .text("L = Lunch taken    D = Dinner taken    ", startX, y, {
+      continued: true,
+    })
+    .fillColor(C.red)
+    .text("- = Meal not taken");
+  y += 16;
+  doc
+    .fontSize(13)
+    .font("Helvetica-Bold")
+    .fillColor(C.text)
+    .text(`Grand Total Meals : ${grandTotal}`, startX, y);
+
+  return pdfToBuffer(doc);
 };
 
 // ======================================
-// 5. BAZAAR LEDGER PDF
+// 5. BAZAAR LEDGER PDF  (A4 portrait)
 // ======================================
 
 exports.generateBazaarLedgerPdf = async ({ data }) => {
+  const doc = new PDFDocument({
+    size: "A4",
+    margin: 36,
+    info: { Title: "Daily Bazaar Ledger" },
+    autoFirstPage: true,
+  });
+
+  const pageW = doc.page.width - 72;
+  const startX = 36;
+  let y = 36;
+
+  // Title
+  doc
+    .fontSize(22)
+    .font("Helvetica-Bold")
+    .fillColor(C.text)
+    .text("Daily Bazaar Ledger", startX, y, { width: pageW, align: "center" });
+  y += 30;
+
+  doc
+    .fontSize(11)
+    .font("Helvetica-Bold")
+    .text(`${data.month} ${data.year}`, startX, y, {
+      width: pageW,
+      align: "center",
+    });
+  y += 22;
+
+  // Columns
+  const cols = [
+    { label: "Date", w: Math.floor(pageW * 0.12), align: "center" },
+    { label: "Meal", w: Math.floor(pageW * 0.1), align: "center" },
+    { label: "Items", w: Math.floor(pageW * 0.52), align: "left" },
+    { label: "Total Cost", w: Math.floor(pageW * 0.14), align: "right" },
+    { label: "Bazaar By", w: Math.floor(pageW * 0.12), align: "center" },
+  ];
+  const hdrH = 22;
+
+  // Header
+  let x = startX;
+  cols.forEach((col) => {
+    drawHeader(doc, x, y, col.w, hdrH, col.label, {
+      align: col.align === "right" ? "center" : col.align,
+    });
+    x += col.w;
+  });
+  y += hdrH;
+
   let grandTotal = 0;
 
-  const rowsHtml = data.entries
-    .map((entry) => {
-      grandTotal += Number(entry.totalCost);
-      const itemsList = entry.items
-        .map((item) => `<li>${item.itemName} = ₹${item.price}</li>`)
-        .join("");
+  data.entries.forEach((entry) => {
+    grandTotal += Number(entry.totalCost);
 
-      return `
-      <tr>
-        <td style="font-weight:700;white-space:nowrap">${entry.date}/${data.month}/${data.year}</td>
-        <td>${entry.mealType}</td>
-        <td style="text-align:left;padding-left:16px">
-          <ul style="list-style:disc;padding-left:16px;margin:0;line-height:1.8">
-            ${itemsList}
-          </ul>
-        </td>
-        <td class="num" style="font-weight:700">₹${entry.totalCost}</td>
-        <td>${entry.bazaarBy}</td>
-      </tr>`;
-    })
-    .join("");
+    const itemsText = entry.items
+      .map((item) => `${item.itemName} = ₹${item.price}`)
+      .join("\n");
 
-  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
-  <style>
-    ${baseStyles}
-    .grand { margin-top:24px; font-size:17px; font-weight:700; text-align:right; padding:14px 20px; background:white; border:1px solid #ccc; border-radius:8px; }
-    td { vertical-align:top; }
-  </style>
-  </head><body>
-  <h1>Daily Bazaar Ledger</h1>
-  <p style="text-align:center;margin-bottom:24px;font-size:15px;font-weight:600">
-    ${data.month} ${data.year}
-  </p>
-  <table>
-    <colgroup>
-      <col style="width:12%"/>
-      <col style="width:10%"/>
-      <col style="width:52%"/>
-      <col style="width:14%"/>
-      <col style="width:12%"/>
-    </colgroup>
-    <thead>
-      <tr>
-        <th>Date</th>
-        <th>Meal</th>
-        <th style="text-align:left;padding-left:16px">Items</th>
-        <th>Total Cost</th>
-        <th>Bazaar By</th>
-      </tr>
-    </thead>
-    <tbody>${rowsHtml}</tbody>
-  </table>
-  <div class="grand">Grand Total Bazaar Cost : ₹${grandTotal}</div>
-  </body></html>`;
+    // Calculate row height based on items
+    const lineH = 13;
+    const itemLines = entry.items.length;
+    const cellH = Math.max(24, itemLines * lineH + 8);
 
-  return await htmlToPdf(html, {
-    format: "A4",
-    margin: { top: "30px", bottom: "30px", left: "30px", right: "30px" },
+    // Check for page overflow
+    if (y + cellH > doc.page.height - 60) {
+      doc.addPage();
+      y = 36;
+      // Redraw header
+      x = startX;
+      cols.forEach((col) => {
+        drawHeader(doc, x, y, col.w, hdrH, col.label, {
+          align: col.align === "right" ? "center" : col.align,
+        });
+        x += col.w;
+      });
+      y += hdrH;
+    }
+
+    x = startX;
+    const cells = [
+      {
+        val: `${entry.date}/${data.month}/${data.year}`,
+        align: "center",
+        bold: true,
+      },
+      { val: entry.mealType, align: "center" },
+      { val: itemsText, align: "left", multiline: true },
+      { val: `₹${entry.totalCost}`, align: "right", bold: true },
+      { val: entry.bazaarBy, align: "center" },
+    ];
+
+    cols.forEach((col, ci) => {
+      const cell = cells[ci];
+      // Draw background + border
+      doc.rect(x, y, col.w, cellH).fillAndStroke(C.white, C.border);
+
+      const textX = x + 5;
+      const textY = y + 5;
+      const textW = col.w - 10;
+
+      doc
+        .save()
+        .fillColor(C.text)
+        .fontSize(8)
+        .font(cell.bold ? "Helvetica-Bold" : "Helvetica");
+
+      if (cell.multiline) {
+        doc.text(cell.val, textX, textY, {
+          width: textW,
+          align: "left",
+          lineGap: 2,
+        });
+      } else {
+        const tH = 8;
+        const tY = y + (cellH - tH) / 2;
+        doc.text(String(cell.val ?? ""), textX, tY, {
+          width: textW,
+          align: cell.align,
+          lineBreak: false,
+          ellipsis: true,
+        });
+      }
+      doc.restore();
+      x += col.w;
+    });
+
+    y += cellH;
   });
+
+  y += 20;
+  doc
+    .fontSize(13)
+    .font("Helvetica-Bold")
+    .fillColor(C.text)
+    .text(`Grand Total Bazaar Cost : ₹${grandTotal}`, startX, y, {
+      width: pageW,
+      align: "right",
+    });
+
+  return pdfToBuffer(doc);
 };
