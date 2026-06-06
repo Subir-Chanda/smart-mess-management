@@ -34,16 +34,12 @@ function Login() {
         formData,
       );
 
-      // Save token
       localStorage.setItem("token", res.data.token);
-
-      // Save user — includes messName and messId from updated authController
       localStorage.setItem("user", JSON.stringify(res.data.user));
 
       toast.success("Login Successful");
 
       setTimeout(() => {
-        // ── If user hasn't set up their mess yet → post-signup ──
         if (res.data.redirectTo === "post-signup") {
           navigate("/post-signup");
           return;
@@ -53,26 +49,17 @@ function Login() {
     } catch (error) {
       console.log(error);
 
-      // ── Pending approval after joining a mess ──
       if (error.response?.status === 403) {
         const msg = error.response?.data?.message || "";
 
-        // Save token if returned (for WaitingApproval page to show mess name)
         if (error.response?.data?.token) {
           localStorage.setItem("token", error.response.data.token);
         }
         if (error.response?.data?.user) {
-          localStorage.setItem(
-            "user",
-            JSON.stringify(error.response.data.user),
-          );
+          localStorage.setItem("user", JSON.stringify(error.response.data.user));
         }
 
-        // Check if it's a mess-pending message or old approval message
-        if (
-          msg.includes("pending admin approval") ||
-          msg === "Waiting For Admin Approval"
-        ) {
+        if (msg.includes("pending admin approval") || msg === "Waiting For Admin Approval") {
           navigate("/waiting-approval");
         } else {
           toast.error(msg || "Access Denied");
@@ -85,41 +72,22 @@ function Login() {
 
   const inputStyle = (field) => ({
     width: "100%",
-    padding: "12px",
+    padding: "11px 14px",
     boxSizing: "border-box",
-    border: errors[field] ? "2px solid red" : "1px solid #ccc",
+    border: errors[field] ? "1.5px solid #ef4444" : "1.5px solid #e5e7eb",
     borderRadius: "8px",
-    fontSize: "16px",
+    fontSize: "15px",
     outline: "none",
+    background: "white",
+    color: "#111827",
+    transition: "border-color 0.15s",
   });
 
   const errorBubble = (field) =>
     errors[field] ? (
-      <div style={{ position: "relative", marginTop: "8px" }}>
-        <div
-          style={{
-            width: 0,
-            height: 0,
-            borderLeft: "8px solid transparent",
-            borderRight: "8px solid transparent",
-            borderBottom: "8px solid #e53935",
-            marginLeft: "15px",
-          }}
-        />
-        <div
-          style={{
-            background: "#e53935",
-            color: "white",
-            padding: "10px 14px",
-            borderRadius: "6px",
-            fontSize: "14px",
-            fontWeight: "500",
-            boxShadow: "0px 3px 8px rgba(0,0,0,0.2)",
-          }}
-        >
-          {errors[field]}
-        </div>
-      </div>
+      <p style={{ color: "#ef4444", fontSize: "12px", marginTop: "5px", marginLeft: "2px" }}>
+        {errors[field]}
+      </p>
     ) : null;
 
   return (
@@ -129,38 +97,49 @@ function Login() {
         display: "flex",
         justifyContent: "center",
         alignItems: "center",
-        background: "linear-gradient(to right, #ece9e6, #ffffff)",
+        background: "#e8eef7",
         padding: "20px",
       }}
     >
       <div
         style={{
           width: "100%",
-          maxWidth: "420px",
+          maxWidth: "400px",
           background: "white",
-          padding: "30px",
-          borderRadius: "15px",
-          overflow: "hidden",
-          boxShadow: "0px 0px 20px rgba(0,0,0,0.1)",
+          padding: "36px 32px",
+          borderRadius: "16px",
+          boxShadow: "0 4px 24px rgba(37,99,235,0.10)",
         }}
       >
-        <h1
-          style={{
-            textAlign: "center",
-            marginBottom: "25px",
-            fontSize: "32px",
-          }}
-        >
-          Login
-        </h1>
+        {/* Logo + Brand */}
+        <div style={{ textAlign: "center", marginBottom: "28px" }}>
+          <div
+            style={{
+              width: "52px", height: "52px", borderRadius: "14px",
+              background: "#2563eb", display: "inline-flex", alignItems: "center",
+              justifyContent: "center", marginBottom: "14px",
+            }}
+          >
+            <i className="fa-solid fa-utensils" style={{ color: "white", fontSize: "22px" }} />
+          </div>
+          <h2 style={{ fontSize: "22px", fontWeight: "700", color: "#111827", margin: 0 }}>
+            MessAdmin
+          </h2>
+          <p style={{ color: "#6b7280", fontSize: "14px", marginTop: "6px" }}>
+            Sign in to your mess account
+          </p>
+        </div>
 
         <form onSubmit={handleSubmit}>
           {/* EMAIL */}
-          <div style={{ marginBottom: "20px" }}>
+          <div style={{ marginBottom: "16px" }}>
+            <label style={{ fontSize: "13px", fontWeight: "600", color: "#374151", display: "block", marginBottom: "6px" }}>
+              Email address
+            </label>
             <input
               type="email"
               name="email"
-              placeholder="Enter Email"
+              placeholder="admin@blockmess.com"
               value={formData.email}
               onChange={handleChange}
               style={inputStyle("email")}
@@ -169,40 +148,31 @@ function Login() {
           </div>
 
           {/* PASSWORD */}
-          <div style={{ marginBottom: "20px" }}>
+          <div style={{ marginBottom: "22px" }}>
+            <label style={{ fontSize: "13px", fontWeight: "600", color: "#374151", display: "block", marginBottom: "6px" }}>
+              Password
+            </label>
             <div
               style={{
                 display: "flex",
                 alignItems: "center",
-                width: "100%",
-                boxSizing: "border-box",
-                border: errors.password ? "2px solid red" : "1px solid #ccc",
+                border: errors.password ? "1.5px solid #ef4444" : "1.5px solid #e5e7eb",
                 borderRadius: "8px",
-                padding: "12px",
+                padding: "11px 14px",
+                background: "white",
+                transition: "border-color 0.15s",
               }}
             >
               <input
                 type={showPassword ? "text" : "password"}
                 name="password"
-                placeholder="Enter Password"
+                placeholder="••••••••"
                 value={formData.password}
                 onChange={handleChange}
-                style={{
-                  border: "none",
-                  outline: "none",
-                  flex: 1,
-                  fontSize: "16px",
-                }}
+                style={{ border: "none", outline: "none", flex: 1, fontSize: "15px", color: "#111827" }}
               />
-              <span
-                onClick={() => setShowPassword(!showPassword)}
-                style={{ cursor: "pointer", fontSize: "18px" }}
-              >
-                <i
-                  className={
-                    showPassword ? "fa-solid fa-eye-slash" : "fa-solid fa-eye"
-                  }
-                ></i>
+              <span onClick={() => setShowPassword(!showPassword)} style={{ cursor: "pointer", color: "#9ca3af", fontSize: "16px" }}>
+                <i className={showPassword ? "fa-solid fa-eye-slash" : "fa-solid fa-eye"} />
               </span>
             </div>
             {errorBubble("password")}
@@ -213,22 +183,26 @@ function Login() {
             type="submit"
             style={{
               width: "100%",
-              padding: "14px",
-              boxSizing: "border-box",
-              background: "black",
+              padding: "13px",
+              background: "#2563eb",
               color: "white",
               border: "none",
-              borderRadius: "8px",
-              fontSize: "16px",
+              borderRadius: "9px",
+              fontSize: "15px",
+              fontWeight: "700",
               cursor: "pointer",
+              letterSpacing: "0.3px",
             }}
           >
-            Login
+            Sign In
           </button>
         </form>
 
-        <p style={{ marginTop: "20px", textAlign: "center", fontSize: "15px" }}>
-          New User? <Link to="/register">Signup</Link>
+        <p style={{ marginTop: "20px", textAlign: "center", fontSize: "14px", color: "#6b7280" }}>
+          New User?{" "}
+          <Link to="/register" style={{ color: "#2563eb", fontWeight: "600", textDecoration: "none" }}>
+            Sign Up
+          </Link>
         </p>
       </div>
     </div>

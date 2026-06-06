@@ -14,12 +14,7 @@ function Register() {
     number: false,
     special: false,
   });
-  const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    password: "",
-    // role is NOT collected here anymore — determined in PostSignup
-  });
+  const [formData, setFormData] = useState({ name: "", email: "", password: "" });
 
   const validatePassword = (password) => {
     setPasswordRules({
@@ -52,7 +47,7 @@ function Register() {
     try {
       const res = await axios.post(
         (import.meta.env.VITE_API_URL || "http://localhost:5000") + "/api/auth/register",
-        formData, // no role sent — backend defaults to member
+        formData,
       );
 
       localStorage.setItem("token", res.data.token);
@@ -73,43 +68,22 @@ function Register() {
 
   const inputStyle = (field) => ({
     width: "100%",
-    padding: "12px",
+    padding: "11px 14px",
     boxSizing: "border-box",
-    border: errors[field] ? "2px solid red" : "1px solid #ccc",
+    border: errors[field] ? "1.5px solid #ef4444" : "1.5px solid #e5e7eb",
     borderRadius: "8px",
-    fontSize: "16px",
+    fontSize: "15px",
     outline: "none",
+    background: "white",
+    color: "#111827",
+    transition: "border-color 0.15s",
   });
 
   const errorBubble = (field) =>
     errors[field] ? (
-      <div style={{ position: "relative", marginTop: "8px" }}>
-        <div
-          style={{
-            width: 0,
-            height: 0,
-            borderLeft: "8px solid transparent",
-            borderRight: "8px solid transparent",
-            borderBottom: "8px solid #e53935",
-            marginLeft: "15px",
-          }}
-        />
-        <div
-          style={{
-            background: "#e53935",
-            color: "white",
-            padding: "10px 14px",
-            borderRadius: "6px",
-            fontSize: "14px",
-            fontWeight: "500",
-            boxShadow: "0px 3px 8px rgba(0,0,0,0.2)",
-            width: "fit-content",
-            maxWidth: "100%",
-          }}
-        >
-          {errors[field]}
-        </div>
-      </div>
+      <p style={{ color: "#ef4444", fontSize: "12px", marginTop: "5px", marginLeft: "2px" }}>
+        {errors[field]}
+      </p>
     ) : null;
 
   return (
@@ -119,7 +93,7 @@ function Register() {
         display: "flex",
         justifyContent: "center",
         alignItems: "center",
-        background: "linear-gradient(to right, #ece9e6, #ffffff)",
+        background: "#e8eef7",
         padding: "20px",
       }}
     >
@@ -128,28 +102,31 @@ function Register() {
           width: "100%",
           maxWidth: "420px",
           background: "white",
-          padding: "30px",
-          borderRadius: "15px",
-          boxShadow: "0px 0px 20px rgba(0,0,0,0.1)",
+          padding: "36px 32px",
+          borderRadius: "16px",
+          boxShadow: "0 4px 24px rgba(37,99,235,0.10)",
         }}
       >
-        <h1
-          style={{
-            textAlign: "center",
-            marginBottom: "25px",
-            fontSize: "32px",
-          }}
-        >
-          Register
-        </h1>
+        {/* Header */}
+        <div style={{ textAlign: "center", marginBottom: "28px" }}>
+          <h2 style={{ fontSize: "22px", fontWeight: "700", color: "#111827", margin: 0 }}>
+            Create Account
+          </h2>
+          <p style={{ color: "#f59e0b", fontSize: "13px", marginTop: "6px", fontWeight: "500" }}>
+            Join your mess management system
+          </p>
+        </div>
 
         <form onSubmit={handleSubmit}>
           {/* NAME */}
-          <div style={{ marginBottom: "20px" }}>
+          <div style={{ marginBottom: "16px" }}>
+            <label style={{ fontSize: "13px", fontWeight: "600", color: "#374151", display: "block", marginBottom: "6px" }}>
+              Full Name
+            </label>
             <input
               type="text"
               name="name"
-              placeholder="Enter Name"
+              placeholder="Subir Chanda"
               value={formData.name}
               onChange={handleChange}
               style={inputStyle("name")}
@@ -158,11 +135,14 @@ function Register() {
           </div>
 
           {/* EMAIL */}
-          <div style={{ marginBottom: "20px" }}>
+          <div style={{ marginBottom: "16px" }}>
+            <label style={{ fontSize: "13px", fontWeight: "600", color: "#374151", display: "block", marginBottom: "6px" }}>
+              Email address
+            </label>
             <input
               type="email"
               name="email"
-              placeholder="Enter Email"
+              placeholder="subir@example.com"
               value={formData.email}
               onChange={handleChange}
               style={inputStyle("email")}
@@ -172,39 +152,29 @@ function Register() {
 
           {/* PASSWORD */}
           <div style={{ marginBottom: "20px" }}>
+            <label style={{ fontSize: "13px", fontWeight: "600", color: "#374151", display: "block", marginBottom: "6px" }}>
+              Password
+            </label>
             <div
               style={{
                 display: "flex",
                 alignItems: "center",
-                width: "100%",
-                boxSizing: "border-box",
-                border: errors.password ? "2px solid red" : "1px solid #ccc",
+                border: errors.password ? "1.5px solid #ef4444" : "1.5px solid #e5e7eb",
                 borderRadius: "8px",
-                padding: "12px",
+                padding: "11px 14px",
+                background: "white",
               }}
             >
               <input
                 type={showPassword ? "text" : "password"}
                 name="password"
-                placeholder="Enter Password"
+                placeholder="••••••••"
                 value={formData.password}
                 onChange={handleChange}
-                style={{
-                  border: "none",
-                  outline: "none",
-                  flex: 1,
-                  fontSize: "16px",
-                }}
+                style={{ border: "none", outline: "none", flex: 1, fontSize: "15px", color: "#111827" }}
               />
-              <span
-                onClick={() => setShowPassword(!showPassword)}
-                style={{ cursor: "pointer", fontSize: "18px" }}
-              >
-                <i
-                  className={
-                    showPassword ? "fa-solid fa-eye-slash" : "fa-solid fa-eye"
-                  }
-                ></i>
+              <span onClick={() => setShowPassword(!showPassword)} style={{ cursor: "pointer", color: "#9ca3af", fontSize: "16px" }}>
+                <i className={showPassword ? "fa-solid fa-eye-slash" : "fa-solid fa-eye"} />
               </span>
             </div>
             {errorBubble("password")}
@@ -212,24 +182,24 @@ function Register() {
             {/* PASSWORD RULES */}
             <div
               style={{
-                marginTop: "15px",
-                padding: "15px",
-                background: "#f9f9f9",
-                borderRadius: "10px",
-                boxShadow: "0px 0px 10px rgba(0,0,0,0.08)",
+                marginTop: "12px",
+                padding: "12px 14px",
+                background: "#f9fafb",
+                borderRadius: "8px",
+                border: "1px solid #f3f4f6",
               }}
             >
-              <p style={{ marginBottom: "10px", fontWeight: "bold" }}>
+              <p style={{ marginBottom: "8px", fontWeight: "700", fontSize: "12px", color: "#374151" }}>
                 Password must include:
               </p>
               {[
-                [passwordRules.length, "Minimum 5 Characters"],
-                [passwordRules.uppercase, "One Uppercase Letter"],
-                [passwordRules.number, "One Number"],
-                [passwordRules.special, "One Special Character"],
+                [passwordRules.length, "Minimum 5 characters"],
+                [passwordRules.uppercase, "One uppercase letter"],
+                [passwordRules.number, "One number"],
+                [passwordRules.special, "One special character"],
               ].map(([ok, label]) => (
-                <p key={label} style={{ color: ok ? "green" : "red" }}>
-                  {ok ? "✔" : "✖"} {label}
+                <p key={label} style={{ color: ok ? "#16a34a" : "#ef4444", fontSize: "12px", marginBottom: "3px", display: "flex", alignItems: "center", gap: "6px" }}>
+                  <span>{ok ? "✔" : "✖"}</span> {label}
                 </p>
               ))}
             </div>
@@ -240,22 +210,26 @@ function Register() {
             type="submit"
             style={{
               width: "100%",
-              padding: "14px",
-              boxSizing: "border-box",
-              background: "black",
+              padding: "13px",
+              background: "#2563eb",
               color: "white",
               border: "none",
-              borderRadius: "8px",
-              fontSize: "16px",
+              borderRadius: "9px",
+              fontSize: "15px",
+              fontWeight: "700",
               cursor: "pointer",
+              letterSpacing: "0.3px",
             }}
           >
-            Register
+            Create Account
           </button>
         </form>
 
-        <p style={{ marginTop: "20px", textAlign: "center", fontSize: "15px" }}>
-          Already Have Account? <Link to="/">Login</Link>
+        <p style={{ marginTop: "18px", textAlign: "center", fontSize: "14px", color: "#6b7280" }}>
+          Already have an account?{" "}
+          <Link to="/" style={{ color: "#2563eb", fontWeight: "600", textDecoration: "none" }}>
+            Sign In
+          </Link>
         </p>
       </div>
     </div>

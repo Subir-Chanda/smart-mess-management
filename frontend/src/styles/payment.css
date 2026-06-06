@@ -4,7 +4,7 @@
 
 .payment-page-content {
   flex: 1;
-  padding: 25px;
+  padding: 20px;
   background: #f3f4f6;
 }
 
@@ -14,14 +14,10 @@
 
 .payment-main-card {
   background: white;
-
-  border-radius: 20px;
-
-  padding: 35px;
-
+  border-radius: 14px;
+  padding: 28px;
   margin-top: 0;
-
-  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
 }
 
 /* ======================================
@@ -29,14 +25,9 @@
 ====================================== */
 
 .payment-main-card h1 {
-  text-align: center;
-
-  font-size: 58px;
-
+  font-size: 20px;
   font-weight: 700;
-
-  margin-bottom: 35px;
-
+  margin-bottom: 6px;
   color: #111827;
 }
 
@@ -46,7 +37,6 @@
 
 .payment-form-wrapper {
   max-width: 420px;
-
   margin: auto;
 }
 
@@ -55,18 +45,13 @@
 ====================================== */
 
 .payment-qr {
-  width: 260px;
-  height: 260px;
-
+  width: 200px;
+  height: 200px;
   object-fit: cover;
-
-  border-radius: 14px;
-
-  border: 1px solid #ddd;
-
-  background: white;
-
-  padding: 10px;
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+  background: #f9fafb;
+  padding: 8px;
 }
 
 /* ======================================
@@ -74,11 +59,16 @@
 ====================================== */
 
 .payment-input {
-  height: 52px;
+  height: 44px;
+  border-radius: 8px;
+  font-size: 14px;
+  border: 1.5px solid #e5e7eb;
+  outline: none;
+  transition: border-color 0.15s;
+}
 
-  border-radius: 10px;
-
-  font-size: 16px;
+.payment-input:focus {
+  border-color: #2563eb;
 }
 
 /* ======================================
@@ -86,13 +76,14 @@
 ====================================== */
 
 .payment-submit-btn {
-  height: 52px;
-
-  font-size: 18px;
-
-  font-weight: 600;
-
-  border-radius: 10px;
+  height: 44px;
+  font-size: 14px;
+  font-weight: 700;
+  border-radius: 9px;
+  background: #2563eb;
+  color: white;
+  border: none;
+  cursor: pointer;
 }
 
 /* ======================================
@@ -101,14 +92,11 @@
 
 .payment-table-wrapper {
   background: white;
-
-  padding: 25px;
-
-  border-radius: 18px;
-
+  padding: 20px;
+  border-radius: 14px;
   overflow-x: auto;
-
-  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  border: 1px solid #e5e7eb;
 }
 
 /* ======================================
@@ -117,9 +105,7 @@
 
 .payment-table {
   width: 100%;
-
   min-width: 850px;
-
   border-collapse: collapse;
 }
 
@@ -128,15 +114,15 @@
 ====================================== */
 
 .payment-table th {
-  background: #02112b;
-
-  color: white;
-
-  padding: 16px;
-
+  background: #f9fafb;
+  color: #6b7280;
+  padding: 11px 14px;
   text-align: center;
-
-  font-size: 17px;
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  border-bottom: 1px solid #e5e7eb;
 }
 
 /* ======================================
@@ -144,13 +130,11 @@
 ====================================== */
 
 .payment-table td {
-  padding: 16px;
-
-  border-bottom: 1px solid #ddd;
-
+  padding: 13px 14px;
+  border-bottom: 1px solid #f3f4f6;
   text-align: center;
-
-  font-size: 16px;
+  font-size: 14px;
+  color: #374151;
 }
 
 /* ======================================
@@ -159,9 +143,7 @@
 
 .payment-table a {
   text-decoration: none;
-
   color: #2563eb;
-
   font-weight: 600;
 }
 
@@ -170,33 +152,27 @@
 ====================================== */
 
 .payment-table button {
-  padding: 8px 14px;
-
+  padding: 6px 12px;
   border: none;
-
-  border-radius: 8px;
-
-  margin: 0 4px;
-
+  border-radius: 7px;
+  margin: 0 3px;
   font-weight: 600;
-
   cursor: pointer;
+  font-size: 13px;
 }
 
 /* APPROVE */
 
 .payment-table button:first-child {
-  background: #10b981;
-
-  color: white;
+  background: #dcfce7;
+  color: #16a34a;
 }
 
 /* REJECT */
 
 .payment-table button:last-child {
-  background: #ef4444;
-
-  color: white;
+  background: #fee2e2;
+  color: #dc2626;
 }
 
 /* ======================================
@@ -205,12 +181,9 @@
 
 .payment-table td[colspan] {
   padding: 30px;
-
-  font-size: 18px;
-
+  font-size: 15px;
   font-weight: 600;
-
-  color: #6b7280;
+  color: #9ca3af;
 }
 
 /* ======================================
@@ -219,19 +192,19 @@
 
 @media (max-width: 768px) {
   .payment-page-content {
-    padding: 15px;
+    padding: 12px;
   }
 
   .payment-main-card {
-    padding: 25px;
+    padding: 18px;
   }
 
   .payment-main-card h1 {
-    font-size: 40px;
+    font-size: 18px;
   }
 
   .payment-qr {
-    width: 210px;
-    height: 210px;
+    width: 170px;
+    height: 170px;
   }
 }

@@ -18,7 +18,7 @@ function DashboardLayout({ children }) {
           style={{
             position: "fixed",
             inset: 0,
-            background: "rgba(0,0,0,0.5)",
+            background: "rgba(0,0,0,0.4)",
             zIndex: 999,
           }}
           className="sidebar-overlay"

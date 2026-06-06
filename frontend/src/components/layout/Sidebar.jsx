@@ -19,12 +19,10 @@ function Sidebar({ isOpen, onClose }) {
 
   const user = JSON.parse(localStorage.getItem("user") || "{}");
 
-  // Close sidebar on route change (mobile)
   useEffect(() => {
     onClose();
   }, [location.pathname]);
 
-  // Restore scroll position
   useEffect(() => {
     const savedPosition = localStorage.getItem("sidebarScroll");
     if (sidebarRef.current && savedPosition !== null) {
@@ -41,82 +39,26 @@ function Sidebar({ isOpen, onClose }) {
   const menus = [
     { name: "Dashboard", path: "/dashboard", icon: "fa-solid fa-house" },
     { name: "Members", path: "/dashboard/members", icon: "fa-solid fa-users" },
-    {
-      name: "Deposits",
-      path: "/dashboard/deposits",
-      icon: "fa-solid fa-money-bill",
-    },
-    {
-      name: "Make Payment",
-      path: "/dashboard/payment",
-      icon: "fa-solid fa-qrcode",
-    },
-    {
-      name: "PDF Reports",
-      path: "/dashboard/pdf-reports",
-      icon: "fa-solid fa-file-pdf",
-    },
+    { name: "Deposits", path: "/dashboard/deposits", icon: "fa-solid fa-money-bill" },
+    { name: "Make Payment", path: "/dashboard/payment", icon: "fa-solid fa-qrcode" },
+    { name: "PDF Reports", path: "/dashboard/pdf-reports", icon: "fa-solid fa-file-pdf" },
   ];
 
   const mealMenus = [
-    {
-      name: "Meal Khata",
-      path: "/dashboard/meal-khata",
-      icon: "fa-solid fa-book",
-    },
-    {
-      name: "Meal Status",
-      path: "/dashboard/meal-status",
-      icon: "fa-solid fa-toggle-on",
-    },
-    {
-      name: "Bazaar Ledger",
-      path: "/dashboard/bazaar",
-      icon: "fa-solid fa-cart-shopping",
-    },
-    {
-      name: "Guest Meal Rates",
-      path: "/dashboard/guest-meal-rates",
-      icon: "fa-solid fa-money-bill-wave",
-    },
-    {
-      name: "Guest Meal Logs",
-      path: "/dashboard/guest-meals",
-      icon: "fa-solid fa-utensils",
-    },
-    {
-      name: "Bazaar Summary",
-      path: "/dashboard/bazaar-summary",
-      icon: "fa-solid fa-chart-line",
-    },
-    {
-      name: "Rice Management",
-      path: "/dashboard/rice-management",
-      icon: "fa-solid fa-bowl-rice",
-    },
-    {
-      name: "Gas Management",
-      path: "/dashboard/gas-management",
-      icon: "fa-solid fa-fire",
-    },
-    {
-      name: "Monthly Calculation",
-      path: "/dashboard/monthly-calculation",
-      icon: "fa-solid fa-calculator",
-    },
+    { name: "Meal Khata", path: "/dashboard/meal-khata", icon: "fa-solid fa-book" },
+    { name: "Meal Status", path: "/dashboard/meal-status", icon: "fa-solid fa-toggle-on" },
+    { name: "Bazaar Ledger", path: "/dashboard/bazaar", icon: "fa-solid fa-cart-shopping" },
+    { name: "Guest Meal Rates", path: "/dashboard/guest-meal-rates", icon: "fa-solid fa-money-bill-wave" },
+    { name: "Guest Meal Logs", path: "/dashboard/guest-meals", icon: "fa-solid fa-utensils" },
+    { name: "Bazaar Summary", path: "/dashboard/bazaar-summary", icon: "fa-solid fa-chart-line" },
+    { name: "Rice Management", path: "/dashboard/rice-management", icon: "fa-solid fa-bowl-rice" },
+    { name: "Gas Management", path: "/dashboard/gas-management", icon: "fa-solid fa-fire" },
+    { name: "Monthly Calculation", path: "/dashboard/monthly-calculation", icon: "fa-solid fa-calculator" },
   ];
 
   const fixedMenus = [
-    {
-      name: "Mashi Management",
-      path: "/dashboard/mashi-management",
-      icon: "fa-solid fa-users-gear",
-    },
-    {
-      name: "Fixed Cost",
-      path: "/dashboard/fixed-cost",
-      icon: "fa-solid fa-file-invoice-dollar",
-    },
+    { name: "Mashi Management", path: "/dashboard/mashi-management", icon: "fa-solid fa-users-gear" },
+    { name: "Fixed Cost", path: "/dashboard/fixed-cost", icon: "fa-solid fa-file-invoice-dollar" },
   ];
 
   const adminMenus = [
@@ -131,77 +73,67 @@ function Sidebar({ isOpen, onClose }) {
   const linkStyle = (path) => ({
     display: "flex",
     alignItems: "center",
-    gap: "15px",
+    gap: "11px",
     textDecoration: "none",
-    color: "white",
-    padding: "14px 18px",
-    borderRadius: "14px",
-    background: location.pathname === path ? "#374151" : "transparent",
-    transition: "0.2s",
-    fontSize: "17px",
-    fontWeight: "600",
+    color: location.pathname === path ? "#2563eb" : "#374151",
+    padding: "9px 12px",
+    borderRadius: "8px",
+    background: location.pathname === path ? "#eff6ff" : "transparent",
+    transition: "0.15s",
+    fontSize: "14px",
+    fontWeight: location.pathname === path ? "600" : "500",
+    borderLeft: location.pathname === path ? "3px solid #2563eb" : "3px solid transparent",
   });
 
   const subLinkStyle = (path) => ({
     display: "flex",
     alignItems: "center",
-    gap: "12px",
+    gap: "9px",
     textDecoration: "none",
-    color: "white",
-    padding: "11px 15px",
-    borderRadius: "10px",
-    background: location.pathname === path ? "#475569" : "#334155",
-    fontWeight: "500",
-    fontSize: "15px",
-    transition: "0.2s",
+    color: location.pathname === path ? "#2563eb" : "#6b7280",
+    padding: "7px 10px",
+    borderRadius: "6px",
+    background: location.pathname === path ? "#eff6ff" : "transparent",
+    fontWeight: location.pathname === path ? "600" : "400",
+    fontSize: "13px",
+    transition: "0.15s",
   });
 
   const groupHeaderStyle = {
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
-    padding: "14px 18px",
-    borderRadius: "14px",
-    background: "#1e293b",
+    padding: "8px 12px",
+    borderRadius: "6px",
+    background: "transparent",
     cursor: "pointer",
-    marginTop: "10px",
-    fontSize: "17px",
-    fontWeight: "600",
-    color: "white",
+    marginTop: "4px",
+    fontSize: "11px",
+    fontWeight: "700",
+    color: "#9ca3af",
     border: "none",
     width: "100%",
     textAlign: "left",
+    textTransform: "uppercase",
+    letterSpacing: "0.7px",
   };
+
+  const messNameInitials = (user?.messName || "M").charAt(0).toUpperCase();
 
   return (
     <>
-      {/* OVERLAY — mobile only */}
-      {isOpen && (
-        <div
-          onClick={onClose}
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(0,0,0,0.5)",
-            zIndex: 999,
-            display: "none",
-          }}
-          className="sidebar-overlay"
-        />
-      )}
-
       {/* SIDEBAR */}
       <div
         ref={sidebarRef}
         onScroll={handleSidebarScroll}
         className={`sidebar ${isOpen ? "sidebar-open" : ""}`}
         style={{
-          width: "280px",
-          minWidth: "280px",
+          width: "220px",
+          minWidth: "220px",
           height: "100vh",
-          background: "#02112b",
-          color: "white",
-          padding: "20px 15px",
+          background: "white",
+          color: "#374151",
+          padding: "0",
           position: "fixed",
           left: 0,
           top: 0,
@@ -209,6 +141,9 @@ function Sidebar({ isOpen, onClose }) {
           zIndex: 1000,
           scrollbarGutter: "stable",
           transition: "transform 0.3s ease",
+          borderRight: "1px solid #e5e7eb",
+          display: "flex",
+          flexDirection: "column",
         }}
       >
         {/* CLOSE BUTTON — mobile only */}
@@ -219,11 +154,11 @@ function Sidebar({ isOpen, onClose }) {
             display: "none",
             position: "absolute",
             top: "16px",
-            right: "16px",
+            right: "12px",
             background: "transparent",
             border: "none",
-            color: "white",
-            fontSize: "24px",
+            color: "#6b7280",
+            fontSize: "20px",
             cursor: "pointer",
             padding: "4px 8px",
             lineHeight: 1,
@@ -232,28 +167,40 @@ function Sidebar({ isOpen, onClose }) {
           ✕
         </button>
 
-        {/* TITLE */}
-        <h1
+        {/* BRAND HEADER */}
+        <div
           style={{
-            textAlign: "center",
-            marginBottom: "32px",
-            marginTop: "8px",
-            fontSize: "30px",
-            fontWeight: "bold",
-            lineHeight: "38px",
+            padding: "16px 16px 14px",
+            borderBottom: "1px solid #f3f4f6",
+            display: "flex",
+            alignItems: "center",
+            gap: "10px",
           }}
         >
-          {user?.role === "admin" ? "Mess Manager" : "Mess Member"}
-        </h1>
+          <div
+            style={{
+              width: "36px", height: "36px", borderRadius: "9px",
+              background: "#2563eb", display: "flex", alignItems: "center",
+              justifyContent: "center", flexShrink: 0,
+            }}
+          >
+            <i className="fa-solid fa-utensils" style={{ color: "white", fontSize: "15px" }} />
+          </div>
+          <div>
+            <div style={{ fontWeight: "700", fontSize: "14px", color: "#111827", lineHeight: 1.2 }}>
+              {user?.messName || "Mess"}
+            </div>
+            <div style={{ fontSize: "11px", color: "#6b7280", marginTop: "2px" }}>
+              {user?.role === "admin" ? "Admin Panel" : "Member Panel"}
+            </div>
+          </div>
+        </div>
 
         {/* MAIN MENUS */}
-        <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+        <div style={{ padding: "10px 10px", display: "flex", flexDirection: "column", gap: "2px", flex: 1 }}>
           {menus.map((menu) => (
             <Link key={menu.path} to={menu.path} style={linkStyle(menu.path)}>
-              <i
-                className={menu.icon}
-                style={{ minWidth: "20px", fontSize: "18px" }}
-              />
+              <i className={menu.icon} style={{ minWidth: "16px", fontSize: "14px", color: location.pathname === menu.path ? "#2563eb" : "#9ca3af" }} />
               <span>{menu.name}</span>
             </Link>
           ))}
@@ -267,38 +214,15 @@ function Sidebar({ isOpen, onClose }) {
             }}
             style={groupHeaderStyle}
           >
-            <div>
-              <i
-                className="fa-solid fa-utensils"
-                style={{ marginRight: "12px" }}
-              />
-              Meal Info
-            </div>
-            <i
-              className={
-                showMealMenu
-                  ? "fa-solid fa-chevron-up"
-                  : "fa-solid fa-chevron-down"
-              }
-            />
+            <span>Meal Info</span>
+            <i className={showMealMenu ? "fa-solid fa-chevron-up" : "fa-solid fa-chevron-down"} style={{ fontSize: "10px" }} />
           </button>
 
           {showMealMenu && (
-            <div
-              style={{
-                marginLeft: "16px",
-                display: "flex",
-                flexDirection: "column",
-                gap: "8px",
-              }}
-            >
+            <div style={{ display: "flex", flexDirection: "column", gap: "1px", marginBottom: "4px" }}>
               {mealMenus.map((menu) => (
-                <Link
-                  key={menu.path}
-                  to={menu.path}
-                  style={subLinkStyle(menu.path)}
-                >
-                  <i className={menu.icon} style={{ width: "16px" }} />
+                <Link key={menu.path} to={menu.path} style={subLinkStyle(menu.path)}>
+                  <i className={menu.icon} style={{ width: "14px", fontSize: "12px", color: location.pathname === menu.path ? "#2563eb" : "#9ca3af" }} />
                   <span>{menu.name}</span>
                 </Link>
               ))}
@@ -314,38 +238,15 @@ function Sidebar({ isOpen, onClose }) {
             }}
             style={groupHeaderStyle}
           >
-            <div>
-              <i
-                className="fa-solid fa-coins"
-                style={{ marginRight: "12px" }}
-              />
-              Fixed Cost + Mashi
-            </div>
-            <i
-              className={
-                showFixedMenu
-                  ? "fa-solid fa-chevron-up"
-                  : "fa-solid fa-chevron-down"
-              }
-            />
+            <span>Fixed Cost + Mashi</span>
+            <i className={showFixedMenu ? "fa-solid fa-chevron-up" : "fa-solid fa-chevron-down"} style={{ fontSize: "10px" }} />
           </button>
 
           {showFixedMenu && (
-            <div
-              style={{
-                marginLeft: "16px",
-                display: "flex",
-                flexDirection: "column",
-                gap: "8px",
-              }}
-            >
+            <div style={{ display: "flex", flexDirection: "column", gap: "1px", marginBottom: "4px" }}>
               {fixedMenus.map((menu) => (
-                <Link
-                  key={menu.path}
-                  to={menu.path}
-                  style={subLinkStyle(menu.path)}
-                >
-                  <i className={menu.icon} style={{ width: "16px" }} />
+                <Link key={menu.path} to={menu.path} style={subLinkStyle(menu.path)}>
+                  <i className={menu.icon} style={{ width: "14px", fontSize: "12px", color: location.pathname === menu.path ? "#2563eb" : "#9ca3af" }} />
                   <span>{menu.name}</span>
                 </Link>
               ))}
@@ -363,37 +264,14 @@ function Sidebar({ isOpen, onClose }) {
                 }}
                 style={groupHeaderStyle}
               >
-                <div>
-                  <i
-                    className="fa-solid fa-user-shield"
-                    style={{ marginRight: "12px" }}
-                  />
-                  Admin Panel
-                </div>
-                <i
-                  className={
-                    showAdminMenu
-                      ? "fa-solid fa-chevron-up"
-                      : "fa-solid fa-chevron-down"
-                  }
-                />
+                <span>Admin Panel</span>
+                <i className={showAdminMenu ? "fa-solid fa-chevron-up" : "fa-solid fa-chevron-down"} style={{ fontSize: "10px" }} />
               </button>
 
               {showAdminMenu && (
-                <div
-                  style={{
-                    marginLeft: "16px",
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "8px",
-                  }}
-                >
+                <div style={{ display: "flex", flexDirection: "column", gap: "1px", marginBottom: "4px" }}>
                   {adminMenus.map((menu) => (
-                    <Link
-                      key={menu.path}
-                      to={menu.path}
-                      style={subLinkStyle(menu.path)}
-                    >
+                    <Link key={menu.path} to={menu.path} style={subLinkStyle(menu.path)} className="admin-submenu">
                       <span>{menu.name}</span>
                     </Link>
                   ))}

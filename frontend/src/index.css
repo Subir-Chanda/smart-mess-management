@@ -1,37 +1,47 @@
 /* =============================================
-   EXISTING STYLES
+   ADMIN SUBMENU
    ============================================= */
 
 .admin-submenu {
-  color: white;
+  color: #6b7280 !important;
   text-decoration: none;
-  padding: 10px 15px;
-  border-radius: 10px;
-  background: #334155;
-  transition: 0.3s;
+  padding: 7px 10px;
+  border-radius: 6px;
+  transition: 0.15s;
 }
 
 .admin-submenu:hover {
-  background: #475569;
+  background: #f3f4f6;
+  color: #374151 !important;
 }
 
 /* =============================================
    RESPONSIVE LAYOUT
    ============================================= */
 
-/* Desktop: sidebar always visible, main shifted right */
 .main-content {
-  margin-left: 280px;
-  width: calc(100% - 280px);
+  margin-left: 220px;
+  width: calc(100% - 220px);
   min-height: 100vh;
   display: flex;
   flex-direction: column;
   overflow-x: hidden;
 }
 
-/* Sidebar always shown on desktop */
 .sidebar {
   transform: translateX(0) !important;
+}
+
+/* =============================================
+   NAVBAR EXTRAS
+   ============================================= */
+
+.navbar-links {
+  display: flex !important;
+}
+
+.navbar-username {
+  display: inline !important;
 }
 
 /* =============================================
@@ -39,36 +49,40 @@
    ============================================= */
 
 @media (max-width: 768px) {
-  /* Main content takes full width */
   .main-content {
     margin-left: 0;
     width: 100%;
   }
 
-  /* Sidebar hidden off-screen by default */
   .sidebar {
     transform: translateX(-100%) !important;
-    width: 280px !important;
-    box-shadow: 4px 0 20px rgba(0, 0, 0, 0.4);
+    width: 220px !important;
+    box-shadow: 4px 0 20px rgba(0, 0, 0, 0.15);
   }
 
-  /* Sidebar slides in when open */
   .sidebar.sidebar-open {
     transform: translateX(0) !important;
   }
 
-  /* Show hamburger button */
   .hamburger-btn {
-    display: block !important;
+    display: flex !important;
+    flex-direction: column;
+    justify-content: center;
   }
 
-  /* Show close button inside sidebar */
   .sidebar-close-btn {
     display: block !important;
   }
 
-  /* Tighten page padding on mobile */
   .main-content > div:last-child {
     padding: 12px !important;
+  }
+
+  .navbar-links {
+    display: none !important;
+  }
+
+  .navbar-username {
+    display: none !important;
   }
 }
