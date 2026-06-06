@@ -12,6 +12,8 @@ const {
   getAllMembers,
 
   transferAdmin,
+
+  removeMember,
 } = require("../controllers/memberController");
 
 const authMiddleware = require("../middleware/authMiddleware");
@@ -74,6 +76,18 @@ router.put(
   authMiddleware,
 
   transferAdmin,
+);
+
+// ======================================
+// REMOVE MEMBER PERMANENTLY
+// ======================================
+
+router.delete(
+  "/remove-member/:id",
+
+  authMiddleware,
+
+  removeMember,
 );
 
 module.exports = router;

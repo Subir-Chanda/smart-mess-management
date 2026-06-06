@@ -55,6 +55,45 @@ exports.getAllMembers = async (req, res) => {
   }
 };
 
+exports.removeMember = async (req, res) => {
+  try {
+    const messId = req.user.messId;
+    const { id } = req.params;
+
+    // Cannot remove yourself
+    if (id === req.user._id.toString()) {
+      return res
+        .status(400)
+        .json({ success: false, message: "You cannot remove yourself." });
+    }
+
+    // Member must belong to same mess
+    const member = await User.findOne({ _id: id, messId });
+    if (!member) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Member not found in this mess." });
+    }
+
+    // Cannot remove another admin
+    if (member.role === "admin") {
+      return res
+        .status(403)
+        .json({ success: false, message: "Cannot remove an admin." });
+    }
+
+    await User.findByIdAndDelete(id);
+
+    res.status(200).json({
+      success: true,
+      message: `${member.name} has been permanently removed.`,
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ success: false, message: "Server Error" });
+  }
+};
+
 exports.transferAdmin = async (req, res) => {
   try {
     const messId = req.user.messId;
