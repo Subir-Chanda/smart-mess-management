@@ -27,6 +27,7 @@ exports.addBazaar = async (req, res) => {
       const uploadedImage = await imagekit.upload({
         file: req.file.buffer.toString("base64"),
         fileName: Date.now() + "-" + req.file.originalname,
+        folder: "images",
       });
       billImage = uploadedImage.url;
     }

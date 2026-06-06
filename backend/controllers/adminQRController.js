@@ -13,6 +13,7 @@ exports.uploadQR = async (req, res) => {
     const uploadedImage = await imagekit.upload({
       file: req.file.buffer,
       fileName: `${Date.now()}-${req.file.originalname}`,
+      folder: "images",
     });
 
     const currentDate = new Date();
