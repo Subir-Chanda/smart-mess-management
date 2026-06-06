@@ -101,7 +101,7 @@ function Members() {
 
                 <th>Role</th>
 
-                <th>Status</th>
+                <th>Monthly Meal</th>
 
                 {isAdmin && <th>Action</th>}
               </tr>
@@ -116,7 +116,35 @@ function Members() {
 
                   <td>{member.role}</td>
 
-                  <td>{member.status}</td>
+                  <td style={{ textAlign: "center" }}>
+                    {member.monthlyMealStatus === "ON" ? (
+                      <span
+                        style={{
+                          background: "#dcfce7",
+                          color: "#16a34a",
+                          padding: "3px 12px",
+                          borderRadius: "20px",
+                          fontSize: "12px",
+                          fontWeight: "600",
+                        }}
+                      >
+                        ON
+                      </span>
+                    ) : (
+                      <span
+                        style={{
+                          background: "#fee2e2",
+                          color: "#dc2626",
+                          padding: "3px 12px",
+                          borderRadius: "20px",
+                          fontSize: "12px",
+                          fontWeight: "600",
+                        }}
+                      >
+                        OFF
+                      </span>
+                    )}
+                  </td>
 
                   {isAdmin && (
                     <td style={{ textAlign: "center" }}>
