@@ -1,35 +1,34 @@
+import { useState } from "react";
 import Sidebar from "./Sidebar";
 import Navbar from "./Navbar";
 import LockBanner from "./LockBanner";
 
 function DashboardLayout({ children }) {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
   return (
-    <div
-      style={{
-        background: "#f3f4f6",
-      }}
-    >
+    <div style={{ background: "#f3f4f6", minHeight: "100vh" }}>
       {/* SIDEBAR */}
-      <Sidebar />
+      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
-      {/* MAIN */}
-      <div
-        style={{
-          marginLeft: "320px",
-          width: "calc(100% - 320px)",
-          minHeight: "100vh",
-          display: "flex",
-          flexDirection: "column",
-          overflowX: "hidden",
-        }}
-      >
-        {/* NAVBAR */}
-        <Navbar />
+      {/* OVERLAY for mobile */}
+      {sidebarOpen && (
+        <div
+          onClick={() => setSidebarOpen(false)}
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.5)",
+            zIndex: 999,
+          }}
+          className="sidebar-overlay"
+        />
+      )}
 
-        {/* LOCK BANNER — shows for all users when month is locked */}
+      {/* MAIN CONTENT */}
+      <div className="main-content">
+        <Navbar onMenuClick={() => setSidebarOpen(true)} />
         <LockBanner />
-
-        {/* PAGE CONTENT */}
         <div
           style={{
             padding: "20px",
