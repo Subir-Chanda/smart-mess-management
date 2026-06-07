@@ -26,8 +26,7 @@ function MakePayment() {
               <h1
                 className="text-center fw-bold mb-4"
                 style={{
-                  fontSize: "70px",
-
+                  fontSize: "28px",
                   color: "#0f172a",
                 }}
               >

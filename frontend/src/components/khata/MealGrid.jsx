@@ -7,6 +7,10 @@ import { totalDays } from "../../utils/dateUtils";
 function MealGrid({ members, currentMonth, currentYear }) {
   const [mealData, setMealData] = useState({});
 
+  const userRaw = localStorage.getItem("user");
+  const currentUser = userRaw ? JSON.parse(userRaw) : null;
+  const isAdmin = currentUser?.role === "admin";
+
   const days = Array.from({ length: totalDays }, (_, i) => i + 1);
 
   // ======================================
@@ -57,7 +61,8 @@ function MealGrid({ members, currentMonth, currentYear }) {
       const token = localStorage.getItem("token");
 
       await axios.post(
-        (import.meta.env.VITE_API_URL || "http://localhost:5000") + "/api/meal/save-meal",
+        (import.meta.env.VITE_API_URL || "http://localhost:5000") +
+          "/api/meal/save-meal",
         {
           userId: memberId,
           date: day,
@@ -190,39 +195,47 @@ function MealGrid({ members, currentMonth, currentYear }) {
                       {/* LUNCH */}
 
                       <td>
-                        <select
-                          className="meal-select"
-                          value={lunch}
-                          disabled={isDisabled}
-                          onChange={(e) =>
-                            handleChange(member._id, lunchKey, e.target.value)
-                          }
-                        >
-                          <option value=""></option>
-
-                          <option value="✓">✓</option>
-
-                          <option value="✗">✗</option>
-                        </select>
+                        {isAdmin ? (
+                          <select
+                            className="meal-select"
+                            value={lunch}
+                            disabled={isDisabled}
+                            onChange={(e) =>
+                              handleChange(member._id, lunchKey, e.target.value)
+                            }
+                          >
+                            <option value=""></option>
+                            <option value="✓">✓</option>
+                            <option value="✗">✗</option>
+                          </select>
+                        ) : (
+                          <span style={{ fontSize: "14px" }}>{lunch}</span>
+                        )}
                       </td>
 
                       {/* DINNER */}
 
                       <td>
-                        <select
-                          className="meal-select"
-                          value={dinner}
-                          disabled={isDisabled}
-                          onChange={(e) =>
-                            handleChange(member._id, dinnerKey, e.target.value)
-                          }
-                        >
-                          <option value=""></option>
-
-                          <option value="✓">✓</option>
-
-                          <option value="✗">✗</option>
-                        </select>
+                        {isAdmin ? (
+                          <select
+                            className="meal-select"
+                            value={dinner}
+                            disabled={isDisabled}
+                            onChange={(e) =>
+                              handleChange(
+                                member._id,
+                                dinnerKey,
+                                e.target.value,
+                              )
+                            }
+                          >
+                            <option value=""></option>
+                            <option value="✓">✓</option>
+                            <option value="✗">✗</option>
+                          </select>
+                        ) : (
+                          <span style={{ fontSize: "14px" }}>{dinner}</span>
+                        )}
                       </td>
                     </React.Fragment>
                   );

@@ -21,7 +21,10 @@ function PaymentForm() {
 
   const fetchQR = async () => {
     try {
-      const res = await axios.get((import.meta.env.VITE_API_URL || "http://localhost:5000") + "/api/payment/get-qr");
+      const res = await axios.get(
+        (import.meta.env.VITE_API_URL || "http://localhost:5000") +
+          "/api/payment/get-qr",
+      );
 
       if (res.data.success && res.data.qr && res.data.qr.qrImage) {
         setQrImage(res.data.qr.qrImage);
@@ -46,7 +49,8 @@ function PaymentForm() {
       formData.append("screenshot", screenshot);
 
       const res = await axios.post(
-        (import.meta.env.VITE_API_URL || "http://localhost:5000") + "/api/payment/create",
+        (import.meta.env.VITE_API_URL || "http://localhost:5000") +
+          "/api/payment/create",
         formData,
         {
           headers: {
@@ -73,15 +77,24 @@ function PaymentForm() {
     <div className="payment-form-wrapper">
       {/* QR IMAGE */}
 
-      <div className="text-center mb-4">
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          marginBottom: "24px",
+        }}
+      >
         {qrImage && (
           <img
             src={qrImage}
             alt="QR"
-            className="img-fluid payment-qr"
             style={{
-              width: "280px",
-              borderRadius: "15px",
+              width: "220px",
+              height: "220px",
+              objectFit: "contain",
+              borderRadius: "12px",
+              border: "1px solid #e5e7eb",
+              display: "block",
             }}
           />
         )}
