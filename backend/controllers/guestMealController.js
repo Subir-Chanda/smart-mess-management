@@ -47,13 +47,11 @@ exports.addGuestMeal = async (req, res) => {
       messId,
     });
 
-    res
-      .status(201)
-      .json({
-        success: true,
-        message: "Guest Meal Added Successfully",
-        guestMeal,
-      });
+    res.status(201).json({
+      success: true,
+      message: "Guest Meal Added Successfully",
+      guestMeal,
+    });
   } catch (error) {
     console.log(error);
     res.status(500).json({ success: false, message: "Server Error" });
@@ -130,5 +128,55 @@ exports.getTotalGuestCost = async (req, res) => {
   } catch (error) {
     console.log(error);
     res.status(500).json({ success: false, message: "Server Error" });
+  }
+};
+
+// ======================================
+// UPDATE GUEST MEAL
+// ======================================
+
+exports.updateGuestMeal = async (req, res) => {
+  try {
+    if (req.user.role !== "admin")
+      return res
+        .status(403)
+        .json({ success: false, message: "Only Admin Can Edit Guest Meals" });
+
+    const { guestCount, mealType, date } = req.body;
+
+    const meal = await GuestMeal.findById(req.params.id);
+    if (!meal)
+      return res
+        .status(404)
+        .json({ success: false, message: "Meal Not Found" });
+
+    const messId = req.user.messId;
+    const GuestMealRate = require("../models/GuestMealRate");
+    let rates = await GuestMealRate.findOne({ messId });
+    if (!rates) rates = await GuestMealRate.create({ messId });
+
+    let rate = meal.rate;
+    const rateMap = {
+      Sobji: rates.sobji,
+      Fish: rates.fish,
+      Egg: rates.egg,
+      Chicken: rates.chicken,
+      "Grand Meal": rates.grandMeal,
+    };
+    if (rateMap[mealType] !== undefined) rate = rateMap[mealType];
+
+    const totalCost = Number(guestCount) * Number(rate);
+
+    const updated = await GuestMeal.findByIdAndUpdate(
+      req.params.id,
+      { guestCount, mealType, date, rate, totalCost },
+      { new: true },
+    );
+    res.status(200).json({ success: true, meal: updated });
+  } catch (error) {
+    console.log(error);
+    res
+      .status(500)
+      .json({ success: false, message: "Failed To Update Guest Meal" });
   }
 };

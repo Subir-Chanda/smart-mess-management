@@ -9,6 +9,7 @@ const {
   getMashiCosts,
   addFixedExpense,
   getFixedExpenses,
+  updateFixedExpense,
 } = require("../controllers/fixedCostController");
 
 // ======================================
@@ -26,5 +27,7 @@ router.get("/mashi", authMiddleware, getMashiCosts);
 router.post("/add-expense", authMiddleware, addFixedExpense);
 
 router.get("/expenses", authMiddleware, getFixedExpenses);
+
+router.put("/expenses/:id", authMiddleware, updateFixedExpense);
 
 module.exports = router;

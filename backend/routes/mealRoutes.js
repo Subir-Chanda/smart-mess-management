@@ -12,6 +12,7 @@ const {
   getMeals,
   getDeposits,
   getBazaarSummary,
+  updateBazaar,
 } = require("../controllers/mealController");
 
 // ======================================
@@ -30,6 +31,8 @@ router.post(
 // ======================================
 
 router.get("/daily-bazaar", authMiddleware, getBazaar);
+
+router.put("/daily-bazaar/:id", authMiddleware, updateBazaar);
 
 // ======================================
 // SAVE MEAL

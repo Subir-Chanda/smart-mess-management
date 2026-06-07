@@ -205,3 +205,34 @@ exports.getBazaarSummary = async (req, res) => {
       .json({ success: false, message: "Failed To Fetch Bazaar Summary" });
   }
 };
+
+// ======================================
+// UPDATE BAZAAR
+// ======================================
+
+exports.updateBazaar = async (req, res) => {
+  try {
+    if (req.user.role !== "admin")
+      return res
+        .status(403)
+        .json({ success: false, message: "Only Admin Can Edit Bazaar" });
+
+    const { date, mealType, items } = req.body;
+    const totalCost = items.reduce(
+      (sum, item) => sum + Number(item.price || 0),
+      0,
+    );
+
+    const bazaar = await DailyBazaar.findByIdAndUpdate(
+      req.params.id,
+      { date, mealType, items, totalCost },
+      { new: true },
+    );
+    res.status(200).json({ success: true, bazaar });
+  } catch (error) {
+    console.log(error);
+    res
+      .status(500)
+      .json({ success: false, message: "Failed To Update Bazaar" });
+  }
+};

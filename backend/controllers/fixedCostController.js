@@ -99,3 +99,29 @@ exports.getFixedExpenses = async (req, res) => {
     res.status(500).json({ success: false });
   }
 };
+
+// ======================================
+// UPDATE FIXED EXPENSE
+// ======================================
+
+exports.updateFixedExpense = async (req, res) => {
+  try {
+    if (req.user.role !== "admin")
+      return res
+        .status(403)
+        .json({ success: false, message: "Only Admin Can Edit Expenses" });
+
+    const { expenseName, amount, date } = req.body;
+    const expense = await FixedExpense.findByIdAndUpdate(
+      req.params.id,
+      { expenseName, amount, date },
+      { new: true },
+    );
+    res.status(200).json({ success: true, expense });
+  } catch (error) {
+    console.log(error);
+    res
+      .status(500)
+      .json({ success: false, message: "Failed To Update Expense" });
+  }
+};

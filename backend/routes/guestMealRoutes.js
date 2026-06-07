@@ -11,6 +11,7 @@ const {
   getGuestRates,
   updateGuestRates,
   getTotalGuestCost,
+  updateGuestMeal,
 } = require("../controllers/guestMealController");
 
 // ======================================
@@ -22,6 +23,8 @@ router.post("/add", authMiddleware, addGuestMeal);
 router.get("/all", authMiddleware, getGuestMeals);
 
 router.delete("/delete/:id", authMiddleware, deleteGuestMeal);
+
+router.put("/update/:id", authMiddleware, updateGuestMeal);
 
 router.get("/total-cost", authMiddleware, getTotalGuestCost);
 // ======================================

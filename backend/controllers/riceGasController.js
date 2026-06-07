@@ -106,3 +106,51 @@ exports.getGasTotal = async (req, res) => {
     res.status(500).json({ success: false });
   }
 };
+
+// ======================================
+// UPDATE RICE
+// ======================================
+
+exports.updateRice = async (req, res) => {
+  try {
+    if (req.user.role !== "admin")
+      return res
+        .status(403)
+        .json({ success: false, message: "Only Admin Can Edit Rice" });
+
+    const { quantity, cost, date } = req.body;
+    const rice = await RiceExpense.findByIdAndUpdate(
+      req.params.id,
+      { quantity, cost, date },
+      { new: true },
+    );
+    res.status(200).json({ success: true, rice });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ success: false, message: "Failed To Update Rice" });
+  }
+};
+
+// ======================================
+// UPDATE GAS
+// ======================================
+
+exports.updateGas = async (req, res) => {
+  try {
+    if (req.user.role !== "admin")
+      return res
+        .status(403)
+        .json({ success: false, message: "Only Admin Can Edit Gas" });
+
+    const { cylinderCount, cost, date } = req.body;
+    const gas = await GasExpense.findByIdAndUpdate(
+      req.params.id,
+      { cylinderCount, cost, date },
+      { new: true },
+    );
+    res.status(200).json({ success: true, gas });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ success: false, message: "Failed To Update Gas" });
+  }
+};
